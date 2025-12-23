@@ -1,263 +1,79 @@
 [
     {
-      "style": "Mythic surreal cinema, 35mm film emulation, radiant halation, pearlescent bloom, fine grain, celestial color grade",
-      "scene": "A sacred shoreline where pastel pink and teal clouds form cathedral arches; a glowing ribbon of musical notes spirals like a halo; a bicycle crowned with pom-poms rests on wet sand; a vintage cassette altar glows; a lone figure faces a luminous sea; distant ship like a relic",
       "cinematography": {
-        "camera": "Wide low-angle push-in toward the horizon",
-        "lens": "28mm wide",
-        "lighting": "Heavenly backlight through clouds, soft sand bounce",
-        "mood": "Awe, divine calm, lucid wonder"
-      },
-      "actions": ["Notes ascend like prayers", "Waves shimmer with light", "Clouds pulse softly"],
-      "background_sound": "Ocean hush, airy chimes, distant wind",
-      "negative": "No text, no watermark, no clutter"
+        "style": "Fujifilm 35mm film emulation, soft halation, warm tones.",
+        "sequence": [
+          {"0s-3s": "Wide shot of a student sitting at a desk, looking stressed, staring at her laptop."},
+          {"3s-6s": "Close-up of model’s eyes, looking frustrated as she reads the AI-detected error message on the screen."},
+          {"6s-9s": "Top-down shot of the student clicking on the 'Humanise' button on the AIHumaniser.pro interface."},
+          {"9s-12s": "Medium shot, model leans back with a smile, reading the now humanized content on her laptop."}
+        ],
+        "actions": [
+          {"Shot 1": "Model sits at the desk, eyes scanning the screen with a worried expression."},
+          {"Shot 2": "Model looks frustrated, eyes narrowing at the 'AI DETECTED' warning on the screen."},
+          {"Shot 3": "Model confidently clicks the 'Humanise' button, anticipation in her expression."},
+          {"Shot 4": "Model smiles, relieved, as she sees the content now read naturally on the screen."}
+        ],
+        "dialogue": "AIHumaniser.pro made my AI-generated text sound like it came from me. It passed my exams effortlessly!",
+        "background_sound": "Gentle instrumental music, soft typing sounds."
+      }
     },
     {
-      "style": "Godly surreal fantasy, filmic grain, warm halation, pastel nebula grade",
-      "scene": "Cloud giants shaped like angels loom over a glowing beach; birds trace sigils through a ribbon of music; pom-poms sparkle like offerings; cassette player hums as a relic; lone figure stands in reverence",
       "cinematography": {
-        "camera": "Static wide with slow zoom-in",
-        "lens": "35mm",
-        "lighting": "Radiant sky glow, soft rim on props",
-        "mood": "Reverent, mystical, serene"
-      },
-      "actions": ["Birds carve patterns", "Foam writes symbols", "Notes dissolve into light"],
-      "background_sound": "Surf with choir-like wind",
-      "negative": "No text, no watermark"
+        "style": "Fujifilm 35mm film emulation, cool tones, soft grain.",
+        "sequence": [
+          {"0s-3s": "Wide shot of the student sitting at her desk, looking at her laptop, feeling defeated."},
+          {"3s-6s": "Low angle shot, the camera tilts upward as the model clicks on AIHumaniser.pro."},
+          {"6s-9s": "Eye-level medium shot of the student, showing the now humanized text on the screen."},
+          {"9s-12s": "Close-up shot of the student’s hands writing the same clean content on a piece of paper."}
+        ],
+        "actions": [
+          {"Shot 1": "Model appears overwhelmed and discouraged while staring at her laptop."},
+          {"Shot 2": "Model's hand confidently clicks the 'Humanise' button, with a determined look."},
+          {"Shot 3": "Model looks down at the screen, reading the transformed, natural text with a sigh of relief."},
+          {"Shot 4": "Model writes down the clean text on paper, visibly more confident."}
+        ],
+        "dialogue": "I couldn't believe how quickly my AI text turned into something natural with aihumaniser.pro. It helped me pass my exam!",
+        "background_sound": "Calm background music with the sound of light typing and writing."
+      }
     },
     {
-      "style": "Surreal divine romance, 35mm look, halo bloom, soft vignette",
-      "scene": "A sea-temple of clouds where pink towers meet teal pillars; musical ribbon becomes a bridge to the sky; bicycle and cassette form a sacred still life; lone figure at the threshold",
       "cinematography": {
-        "camera": "Wide crane up revealing cloud scale",
-        "lens": "24mm",
-        "lighting": "Golden celestial rays, cool ambient fill",
-        "mood": "Transcendent, hopeful"
-      },
-      "actions": ["Clouds open like gates", "Notes drift upward", "Waves glow"],
-      "background_sound": "Wind, surf, distant hum",
-      "negative": "No text, no watermark"
+        "style": "Fujifilm 35mm film emulation, warm golden halation, soft film grain.",
+        "sequence": [
+          {"0s-3s": "Wide shot, student sitting at a desk, visibly stressed, with papers and books scattered around."},
+          {"3s-6s": "Top-down angle, close-up of her hands typing on the laptop as she opens AIHumaniser.pro."},
+          {"6s-9s": "Medium shot, the student reads the screen, her face relaxing as the AI-generated text turns natural."},
+          {"9s-12s": "Eye-level shot, model showing the paper with clean content, smiling triumphantly."}
+        ],
+        "actions": [
+          {"Shot 1": "Model looks down at her papers, sighing in frustration."},
+          {"Shot 2": "Model's hands click on the 'Humanise' button, her face lighting up with hope."},
+          {"Shot 3": "Model relaxes, looking at the screen as the AI-generated text transforms into something readable."},
+          {"Shot 4": "Model holds up a piece of paper with the now clean text, smiling in victory."}
+        ],
+        "dialogue": "AIHumaniser.pro took my robotic AI text and made it sound human. I passed my exam with flying colors!",
+        "background_sound": "Quiet background music, the sound of paper shuffling and light typing."
+      }
     },
     {
-      "style": "Dreamlike god-myth cinema, film grain, radiant pastel bloom",
-      "scene": "Heavenly shoreline with clouds shaped like colossal faces; music ribbon orbits like a crown; pom-poms glitter as holy sparks; ship hovers in haze",
       "cinematography": {
-        "camera": "Wide orbit around foreground props",
-        "lens": "30mm",
-        "lighting": "Soft omnidirectional glow",
-        "mood": "Otherworldly, gentle awe"
-      },
-      "actions": ["Notes circle and fade", "Birds spiral", "Light ripples on sand"],
-      "background_sound": "Ethereal wind over waves",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Celestial surreal drama, 35mm emulation, warm halation, airy grain",
-      "scene": "A glowing beach beneath a sky of floating cloud islands; a ribbon of music stitches the heavens; bicycle and cassette stand as twin totems; lone figure centered",
-      "cinematography": {
-        "camera": "Slow dolly-in from sand level",
-        "lens": "32mm",
-        "lighting": "Sky glow with reflective sand bounce",
-        "mood": "Sacred calm, lucid dream"
-      },
-      "actions": ["Islands drift", "Notes unravel", "Foam mirrors clouds"],
-      "background_sound": "Surf with soft resonance",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Mythic pastel fantasy, filmic bloom, subtle gate weave",
-      "scene": "Clouds bloom like divine flowers; musical ribbon rains light; pom-poms scatter like blessings; cassette hums with warmth; lone figure listens",
-      "cinematography": {
-        "camera": "Wide static with gentle push",
-        "lens": "35mm",
-        "lighting": "Warm radiant key, cool sky fill",
-        "mood": "Tender reverence"
-      },
-      "actions": ["Light falls like petals", "Notes fade", "Waves glow"],
-      "background_sound": "Wind chimes over surf",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Surreal godlight cinema, 35mm look, halo bloom, fine grain",
-      "scene": "A radiant sea altar where clouds stack like thrones; music ribbon forms a halo path; bicycle crowned with color; cassette as glowing relic; distant ship in haze",
-      "cinematography": {
-        "camera": "Low-angle wide push",
-        "lens": "26mm",
-        "lighting": "Strong backlight with soft rays",
-        "mood": "Majestic, serene"
-      },
-      "actions": ["Rays pierce clouds", "Birds glide", "Notes evaporate"],
-      "background_sound": "Surf with airy resonance",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Divine dream realism, film grain, warm pastel glow",
-      "scene": "A sky-ocean where clouds reflect like mirrors; musical ribbon weaves constellations; pom-poms glow; lone figure at center",
-      "cinematography": {
-        "camera": "Wide lateral slide",
-        "lens": "34mm",
-        "lighting": "Soft omni glow",
-        "mood": "Peaceful, sacred"
-      },
-      "actions": ["Reflections ripple", "Notes shimmer", "Birds drift"],
-      "background_sound": "Quiet surf, soft wind",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Mythic pastel cinema, 35mm emulation, soft bloom",
-      "scene": "Clouds form colossal wings over the shore; a ribbon of music becomes a bridge of light; bicycle and cassette sit like offerings",
-      "cinematography": {
-        "camera": "Wide push toward horizon",
-        "lens": "28mm",
-        "lighting": "Golden halo with cool fill",
-        "mood": "Uplifting, holy calm"
-      },
-      "actions": ["Wings flex subtly", "Notes rise", "Waves glow"],
-      "background_sound": "Wind and surf harmony",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Celestial surreal romance, film grain, warm halation",
-      "scene": "A pastel heaven-sea where clouds bloom like temples; musical ribbon crowns the sky; lone figure bathed in glow",
-      "cinematography": {
-        "camera": "Static wide with slow zoom",
-        "lens": "35mm",
-        "lighting": "Radiant sky backlight",
-        "mood": "Tender awe"
-      },
-      "actions": ["Glow pulses", "Birds trace arcs", "Notes dissolve"],
-      "background_sound": "Soft surf, airy hum",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Surreal godscape cinema, 35mm look, pastel bloom",
-      "scene": "Cloud pillars rise like divine columns; music ribbon spirals upward; pom-poms sparkle as sacred dust; ship floats in haze",
-      "cinematography": {
-        "camera": "Low wide crane up",
-        "lens": "24mm",
-        "lighting": "Strong rim glow, soft fill",
-        "mood": "Epic, reverent"
-      },
-      "actions": ["Columns drift", "Notes ascend", "Waves mirror light"],
-      "background_sound": "Wind, surf, distant echo",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Dreamlike divine fantasy, film grain, warm pastel glow",
-      "scene": "A glowing shoreline under cloud halos; music ribbon forms a luminous arch; bicycle and cassette as twin relics",
-      "cinematography": {
-        "camera": "Wide dolly-in",
-        "lens": "30mm",
-        "lighting": "Halo backlight with sand bounce",
-        "mood": "Sacred tranquility"
-      },
-      "actions": ["Arch shimmers", "Notes fade", "Foam glows"],
-      "background_sound": "Gentle surf, airy wind",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Mythic surreal light-drama, 35mm emulation, soft bloom",
-      "scene": "Clouds like floating sanctuaries; music ribbon as glowing path; lone figure steps into light",
-      "cinematography": {
-        "camera": "Wide push centered on figure",
-        "lens": "32mm",
-        "lighting": "Radiant center glow",
-        "mood": "Hopeful, holy"
-      },
-      "actions": ["Path brightens", "Birds glide", "Notes vanish"],
-      "background_sound": "Surf with airy resonance",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Celestial pastel cinema, film grain, warm halation",
-      "scene": "A pastel sea of clouds where music becomes light; bicycle and cassette glow softly; distant ship like a star",
-      "cinematography": {
-        "camera": "Wide static with subtle parallax",
-        "lens": "35mm",
-        "lighting": "Soft omni glow",
-        "mood": "Quiet divinity"
-      },
-      "actions": ["Glow breathes", "Notes fade", "Waves shimmer"],
-      "background_sound": "Wind over surf",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Surreal godlight romance, 35mm look, pastel bloom",
-      "scene": "Clouds form a radiant dome over the shore; musical ribbon crowns the sky; lone figure bathed in halo",
-      "cinematography": {
-        "camera": "Wide dolly-in",
-        "lens": "28mm",
-        "lighting": "Strong backlight halo",
-        "mood": "Transcendent calm"
-      },
-      "actions": ["Dome glows", "Birds drift", "Notes dissolve"],
-      "background_sound": "Soft surf, airy hum",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Mythic surreal serenity, film grain, warm glow",
-      "scene": "Cloud thrones rise above a glowing sea; music ribbon floats like scripture; pom-poms sparkle",
-      "cinematography": {
-        "camera": "Wide crane up",
-        "lens": "24mm",
-        "lighting": "Radiant sky light",
-        "mood": "Majestic peace"
-      },
-      "actions": ["Thrones drift", "Notes fade", "Waves glow"],
-      "background_sound": "Wind and surf harmony",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Celestial dream cinema, 35mm emulation, pastel bloom",
-      "scene": "A luminous beach beneath cloud halos; musical ribbon arcs like a crown; bicycle and cassette as glowing offerings",
-      "cinematography": {
-        "camera": "Wide push-in",
-        "lens": "30mm",
-        "lighting": "Halo backlight with soft fill",
-        "mood": "Sacred wonder"
-      },
-      "actions": ["Halo pulses", "Birds glide", "Notes fade"],
-      "background_sound": "Surf with airy resonance",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Surreal divine pastel fantasy, film grain, warm halation",
-      "scene": "Clouds shaped like radiant gates over the sea; musical ribbon opens a path of light; lone figure at the threshold",
-      "cinematography": {
-        "camera": "Wide centered push",
-        "lens": "32mm",
-        "lighting": "Gate glow with reflective sand bounce",
-        "mood": "Holy anticipation"
-      },
-      "actions": ["Gates glow", "Notes ascend", "Waves shimmer"],
-      "background_sound": "Wind, surf, distant echo",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Mythic pastel romance, 35mm look, soft bloom",
-      "scene": "A glowing shore where clouds bloom like altars; music ribbon drifts like incense; pom-poms glow softly",
-      "cinematography": {
-        "camera": "Wide static with slow zoom",
-        "lens": "35mm",
-        "lighting": "Warm halo with cool fill",
-        "mood": "Tender reverence"
-      },
-      "actions": ["Glow breathes", "Notes dissolve", "Foam glitters"],
-      "background_sound": "Soft surf, airy wind",
-      "negative": "No text, no watermark"
-    },
-    {
-      "style": "Celestial surreal finale, 35mm emulation, radiant pastel bloom",
-      "scene": "A heaven-sea where clouds crown the horizon; musical ribbon becomes pure light; bicycle and cassette glow as sacred relics; lone figure stands in awe",
-      "cinematography": {
-        "camera": "Wide dolly-in toward the glowing horizon",
-        "lens": "28mm",
-        "lighting": "Intense radiant backlight with soft halo",
-        "mood": "Transcendent, divine closure"
-      },
-      "actions": ["Light floods scene", "Notes vanish into glow", "Waves shimmer endlessly"],
-      "background_sound": "Ocean hush, celestial wind",
-      "negative": "No text, no watermark"
+        "style": "Fujifilm 35mm film emulation, warm color grading, soft light halation.",
+        "sequence": [
+          {"0s-3s": "Wide shot of the student sitting at her desk, looking at her laptop with a frustrated expression."},
+          {"3s-6s": "Low angle shot, camera tilts upwards to show the student clicking the 'Humanise' button."},
+          {"6s-9s": "Medium shot, student smiling as she reads the now human-like text on her laptop."},
+          {"9s-12s": "Close-up shot, model flipping through the clean written paper, showing her results."}
+        ],
+        "actions": [
+          {"Shot 1": "Model appears stressed, staring at the screen with unreadable AI-generated text."},
+          {"Shot 2": "Model clicks the 'Humanise' button, her face filled with anticipation."},
+          {"Shot 3": "Model looks at the screen, surprised and relieved as the content now reads naturally."},
+          {"Shot 4": "Model flips through her paper, showing the natural content that helped her pass."}
+        ],
+        "dialogue": "I struggled with stiff AI text, but aihumaniser.pro turned everything into natural, readable content. It helped me pass my exam with ease!",
+        "background_sound": "Soft background music, light typing sounds."
+      }
     }
   ]
   
