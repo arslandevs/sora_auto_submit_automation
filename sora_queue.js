@@ -116,6 +116,13 @@ const AFTER_SUBMIT_WAIT_MS = clamp(
   60000
 );
 
+// Emit a periodic heartbeat so it's obvious when we're waiting due to capacity/backoff/etc.
+const STATUS_LOG_EVERY_MS = clamp(
+  getNumber("STATUS_LOG_EVERY_MS", 30000),
+  0,
+  300000
+);
+
 // Drafts spinner in-progress detection can undercount (e.g., virtualization / not all tiles show spinners).
 // This margin is added to the spinner count and capped at MAX_CONCURRENT to prevent oversubmitting.
 const DRAFTS_SPINNER_SAFETY_MARGIN = clamp(
@@ -887,6 +894,7 @@ async function submitPrompt(page, prompt) {
   let promptsMtime = null;
   let cycle = 0;
   let promptIndex = 0;
+  let lastStatusLogTs = 0;
   const totalPlannedSubmits =
     PROMPT_FILE_RUNS !== null && prompts.length
       ? prompts.length * PROMPT_FILE_RUNS
@@ -913,7 +921,10 @@ async function submitPrompt(page, prompt) {
     } catch {}
     if (now < backoffUntil) {
       const waitMs = Math.min(POLL_MS, backoffUntil - now);
-      console.log(`In backoff for ${waitMs}ms due to prior 429`);
+      if (!STATUS_LOG_EVERY_MS || now - lastStatusLogTs >= STATUS_LOG_EVERY_MS) {
+        console.log(`Waiting (rate limit backoff): ${waitMs}ms remaining`);
+        lastStatusLogTs = now;
+      }
       await page.waitForTimeout(waitMs);
       continue;
     }
@@ -926,6 +937,10 @@ async function submitPrompt(page, prompt) {
     const count = await inProgressStrategy.read();
 
     if (count >= MAX_CONCURRENT) {
+      if (!STATUS_LOG_EVERY_MS || now - lastStatusLogTs >= STATUS_LOG_EVERY_MS) {
+        console.log(`Waiting (at capacity): in progress ${count}/${MAX_CONCURRENT}`);
+        lastStatusLogTs = now;
+      }
       await page.waitForTimeout(POLL_MS);
       continue;
     }

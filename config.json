@@ -16,6 +16,7 @@
   "IN_PROGRESS_MODE": "auto",
   "PROMPT_OBJECT_MODE": "full",
   "PROMPTS_FILE": "prompts.json",
+  "STATUS_LOG_EVERY_MS": 30000,
   "SORA_MODE": "Image",
   "SORA_ASPECT": "9:16",
   "SORA_RESOLUTION": "360p",
