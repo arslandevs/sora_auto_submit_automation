@@ -116,6 +116,12 @@ const AFTER_SUBMIT_WAIT_MS = clamp(
   60000
 );
 
+// Prompt parsing:
+// - "full": if an item is an object, stringify the entire object and submit it.
+// - "prompt": if an item is an object with {prompt: string}, submit only that field.
+const PROMPT_OBJECT_MODE =
+  (fromConfig("PROMPT_OBJECT_MODE") || "full").toString().toLowerCase();
+
 // Logging setup
 let logStream = null;
 try {
@@ -233,8 +239,10 @@ const normalizePromptItem = (item) => {
   if (item === null || item === undefined) return null;
   if (typeof item === "string") return item;
   if (typeof item === "object") {
-    if (typeof item.prompt === "string") return item.prompt;
-    // fallback: stringify whole object
+    if (PROMPT_OBJECT_MODE === "prompt" && typeof item.prompt === "string") {
+      return item.prompt;
+    }
+    // Default: treat the entire object as the prompt payload.
     return JSON.stringify(item, null, 2);
   }
   return String(item);

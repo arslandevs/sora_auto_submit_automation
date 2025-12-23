@@ -9,6 +9,7 @@
   "SORA_SETTINGS_TRIGGER": "",
   "SORA_SETTINGS_MENU": "div[data-radix-menu-content][role='menu']",
   "SORA_ORIENTATION": "",
+  "PROMPT_OBJECT_MODE": "full",
   "PROMPTS_FILE": "prompts.json",
   "SORA_MODE": "Video",
   "SORA_ASPECT": "9:16",
