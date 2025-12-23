@@ -680,25 +680,48 @@ async function submitPrompt(page, prompt) {
     }
   }
   // Clean shutdown: disconnect from CDP so node can exit.
-  try {
-    await browser.close();
-  } catch {}
+  console.log("Shutting down...");
   process.exitCode = process.exitCode || 0;
+  
+  // Failsafe: force exit after 3 seconds no matter what
+  const forceExitTimer = setTimeout(() => {
+    console.log("Force exiting after timeout...");
+    process.exit(process.exitCode || 0);
+  }, 3000);
+  
   if (logStream) {
     try {
       logStream.end();
     } catch {}
   }
-  // Ensure we actually terminate even if something keeps the event loop alive.
+  // Close browser with timeout to prevent hanging
+  try {
+    await Promise.race([
+      browser.close(),
+      new Promise((resolve) => setTimeout(resolve, 2000))
+    ]);
+  } catch {}
+  // Clear the failsafe timer since we're exiting normally
+  clearTimeout(forceExitTimer);
+  // Force exit immediately - don't wait for any async cleanup
+  console.log("Exiting process.");
   process.exit(process.exitCode);
 })().catch((err) => {
   console.error(err);
   process.exitCode = 1;
+  
+  // Failsafe: force exit after 2 seconds on error
+  const forceExitTimer = setTimeout(() => {
+    console.error("Force exiting after error timeout...");
+    process.exit(1);
+  }, 2000);
+  
   if (logStream) {
     try {
       logStream.end();
     } catch {}
   }
+  clearTimeout(forceExitTimer);
   process.exit(1);
 });
 
