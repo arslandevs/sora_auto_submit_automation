@@ -60,17 +60,40 @@ const DEBUG_WS = fromConfig("DEBUG_WS") || "http://localhost:9222";
 const MAX_CONCURRENT = clamp(getNumber("MAX_CONCURRENT", 3), 1, 3);
 
 // Polling interval (ms) when all slots are busy.
-const POLL_MS = clamp(getNumber("POLL_MS", 5000), 500, 30000);
+const POLL_MS = clamp(getNumber("POLL_MS", 5000), 250, 30000);
 
 // Minimum gap between submissions to avoid rate limits.
 const MIN_SUBMIT_INTERVAL_MS = clamp(
   getNumber("MIN_SUBMIT_INTERVAL_MS", 12000),
-  3000,
+  500,
   60000
 );
 
 // Cooldown after 429 or similar errors.
-const BACKOFF_429_MS = clamp(getNumber("BACKOFF_429_MS", 60000), 5000, 300000);
+const BACKOFF_429_MS = clamp(getNumber("BACKOFF_429_MS", 60000), 1000, 300000);
+
+// Optional cap on total successful submissions before exiting.
+const MAX_SUBMITS = getNumber("MAX_SUBMITS", null);
+
+// Tunables (timeouts / delays)
+const FILL_TIMEOUT_MS = clamp(getNumber("FILL_TIMEOUT_MS", 30000), 1000, 120000);
+const CLICK_TIMEOUT_MS = clamp(getNumber("CLICK_TIMEOUT_MS", 10000), 1000, 120000);
+const VISIBLE_TIMEOUT_MS = clamp(getNumber("VISIBLE_TIMEOUT_MS", 5000), 500, 60000);
+const GEN_REQUEST_TIMEOUT_MS = clamp(
+  getNumber("GEN_REQUEST_TIMEOUT_MS", 20000),
+  1000,
+  120000
+);
+const GEN_RESPONSE_TIMEOUT_MS = clamp(
+  getNumber("GEN_RESPONSE_TIMEOUT_MS", 20000),
+  1000,
+  120000
+);
+const AFTER_SUBMIT_WAIT_MS = clamp(
+  getNumber("AFTER_SUBMIT_WAIT_MS", 2000),
+  0,
+  60000
+);
 
 // CSS selectors for Sora UI. Update these to real selectors from the page.
 const selectors = {
@@ -277,8 +300,8 @@ async function submitPrompt(page, prompt) {
     }
   } catch {}
   
-  await page.fill(selectors.promptTextarea, "");
-  await page.fill(selectors.promptTextarea, prompt);
+  await page.fill(selectors.promptTextarea, "", { timeout: FILL_TIMEOUT_MS });
+  await page.fill(selectors.promptTextarea, prompt, { timeout: FILL_TIMEOUT_MS });
   
   // Wait a bit for the UI to register the text
   await page.waitForTimeout(500);
@@ -324,7 +347,7 @@ async function submitPrompt(page, prompt) {
   }
 
   // Observe the backend request/response so we can verify a real submit happened.
-  const reqPromise = waitForGenRequest(page, 20000);
+  const reqPromise = waitForGenRequest(page, GEN_REQUEST_TIMEOUT_MS);
 
   // Try multiple selector strategies
   const submitSelectors = selectors.submitButton.split(',').map(s => s.trim());
@@ -333,7 +356,7 @@ async function submitPrompt(page, prompt) {
   for (const selector of submitSelectors) {
     try {
       const submit = page.locator(selector).first();
-      await submit.waitFor({ state: 'visible', timeout: 5000 });
+      await submit.waitFor({ state: "visible", timeout: VISIBLE_TIMEOUT_MS });
       const isEnabled = await isSubmitEnabled(page);
       if (!isEnabled) {
         console.log(`Submit button disabled, selector: ${selector}`);
@@ -350,7 +373,7 @@ async function submitPrompt(page, prompt) {
       
       // Try normal click first
       try {
-        await submit.click({ timeout: 10000 });
+        await submit.click({ timeout: CLICK_TIMEOUT_MS });
         clicked = true;
         console.log(`Successfully clicked submit with selector: ${selector}`);
         break;
@@ -360,7 +383,7 @@ async function submitPrompt(page, prompt) {
       
       // Try force click
       try {
-        await submit.click({ timeout: 10000, force: true });
+        await submit.click({ timeout: CLICK_TIMEOUT_MS, force: true });
         clicked = true;
         console.log(`Successfully force-clicked submit with selector: ${selector}`);
         break;
@@ -421,7 +444,7 @@ async function submitPrompt(page, prompt) {
   const reqUrl = req.url();
   console.log(`Gen request: ${req.method()} ${reqUrl}`);
   const res = await page
-    .waitForResponse((r) => r.url() === reqUrl, { timeout: 20000 })
+    .waitForResponse((r) => r.url() === reqUrl, { timeout: GEN_RESPONSE_TIMEOUT_MS })
     .catch(() => null);
 
   if (!res) {
@@ -464,10 +487,27 @@ async function submitPrompt(page, prompt) {
 
   let idx = 0;
   let lastAttemptTs = 0;
-  const prompts = loadPrompts();
+  let submitCount = 0;
+  const prompts = loadPrompts(); // initial load
+  let promptsMtime = null;
 
   while (true) {
     const now = Date.now();
+
+    // Reload prompts if file changed (best effort)
+    try {
+      const stat = fs.statSync(PROMPTS_FILE);
+      const mtime = stat.mtimeMs;
+      if (promptsMtime === null) promptsMtime = mtime;
+      if (mtime !== promptsMtime) {
+        const fresh = loadPrompts();
+        if (fresh.length) {
+          prompts.splice(0, prompts.length, ...fresh);
+          promptsMtime = mtime;
+          console.log("Prompts reloaded from file.");
+        }
+      }
+    } catch {}
     if (now < backoffUntil) {
       const waitMs = Math.min(POLL_MS, backoffUntil - now);
       console.log(`In backoff for ${waitMs}ms due to prior 429`);
@@ -495,15 +535,30 @@ async function submitPrompt(page, prompt) {
     console.log(`Submit result: ${ok ? "OK" : "NOT OK"}`);
     if (ok) {
       idx += 1;
+      submitCount += 1;
       // Give UI time to register submission before rechecking.
-      await page.waitForTimeout(2000);
+      if (AFTER_SUBMIT_WAIT_MS) await page.waitForTimeout(AFTER_SUBMIT_WAIT_MS);
+      if (MAX_SUBMITS && submitCount >= MAX_SUBMITS) {
+        console.log(
+          `Reached MAX_SUBMITS=${MAX_SUBMITS}. Stopping automation loop.`
+        );
+        break;
+      }
     } else {
       // If not confirmed, don't hammer.
       await page.waitForTimeout(Math.max(POLL_MS, 2000));
     }
   }
+  // Clean shutdown: disconnect from CDP so node can exit.
+  try {
+    await browser.close();
+  } catch {}
+  process.exitCode = process.exitCode || 0;
+  // Ensure we actually terminate even if something keeps the event loop alive.
+  process.exit(process.exitCode);
 })().catch((err) => {
   console.error(err);
   process.exitCode = 1;
+  process.exit(1);
 });
 
