@@ -12,7 +12,7 @@
   "SORA_VARIATIONS": "1v",
   "SORA_VARIATIONS_BUTTON": "button:has-text('v'), button[role='combobox']:has-text('v')",
   "SORA_VARIATIONS_OPTION": "[role='option']",
-  "TARGET_IN_FLIGHT": 1,
+  "MAX_CONCURRENT": 1,
   "PROMPT_FILE_RUNS": 2,
   "POLL_MS": 5000,
   "MIN_SUBMIT_INTERVAL_MS": 1000,

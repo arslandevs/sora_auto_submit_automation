@@ -67,8 +67,12 @@ const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 const DEBUG_WS = fromConfig("DEBUG_WS") || "http://localhost:9222";
 
 // Target number of in-flight generations to maintain (Sora caps at 3).
-// New name: TARGET_IN_FLIGHT. Legacy: MAX_CONCURRENT.
-const TARGET_IN_FLIGHT = clamp(getNumberAlias("TARGET_IN_FLIGHT", ["MAX_CONCURRENT"], 3), 1, 3);
+// Preferred: MAX_CONCURRENT. Legacy alias: TARGET_IN_FLIGHT.
+const MAX_CONCURRENT = clamp(
+  getNumberAlias("MAX_CONCURRENT", ["TARGET_IN_FLIGHT"], 3),
+  1,
+  3
+);
 
 // Polling interval (ms) when all slots are busy.
 const POLL_MS = clamp(getNumber("POLL_MS", 5000), 250, 30000);
@@ -280,7 +284,7 @@ async function readInProgress(page) {
   // If a loading overlay/spinner is present, assume capacity is full.
   if (selectors.loadingOverlay) {
     const loading = await page.$(selectors.loadingOverlay);
-    if (loading) return TARGET_IN_FLIGHT;
+    if (loading) return MAX_CONCURRENT;
   }
 
   // If nothing found, treat as 0 (UI often hides the counter when it's zero).
@@ -612,7 +616,7 @@ async function submitPrompt(page, prompt) {
 
     const count = await readInProgress(page);
 
-    if (count >= TARGET_IN_FLIGHT) {
+    if (count >= MAX_CONCURRENT) {
       await page.waitForTimeout(POLL_MS);
       continue;
     }
@@ -631,7 +635,7 @@ async function submitPrompt(page, prompt) {
 
     const prompt = prompts[promptIndex];
     console.log(
-      `In progress: ${count}/${TARGET_IN_FLIGHT} | prompt ${promptIndex + 1}/${prompts.length} | run ${cycle + 1}/${PROMPT_FILE_RUNS ?? "∞"}`
+      `In progress: ${count}/${MAX_CONCURRENT} | prompt ${promptIndex + 1}/${prompts.length} | run ${cycle + 1}/${PROMPT_FILE_RUNS ?? "∞"}`
     );
     console.log("Submitting next prompt…");
     const ok = await submitPrompt(page, prompt);
