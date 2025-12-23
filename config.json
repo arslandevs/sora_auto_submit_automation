@@ -12,6 +12,7 @@
   "SORA_SETTINGS_MENU": "div[data-radix-menu-content][role='menu']",
   "SORA_ORIENTATION": "",
   "DRAFTS_SPINNER_SAFETY_MARGIN": 1,
+  "SORA_UI_MODE": "auto",
   "IN_PROGRESS_MODE": "auto",
   "PROMPT_OBJECT_MODE": "full",
   "PROMPTS_FILE": "prompts.json",

@@ -131,13 +131,24 @@ const DRAFTS_RECENT_CHECK_COUNT = clamp(
   12
 );
 
-// In-progress detection mode:
-// - "auto": detect best strategy (default)
-// - "activity": force old UI activity counter logic
-// - "drafts": force drafts spinner logic
-const IN_PROGRESS_MODE = (fromConfig("IN_PROGRESS_MODE") || "auto")
+// Sora UI mode:
+// - "auto": detect which Sora UI is currently in use (default)
+// - "old": classic UI with activity counter + legacy settings
+// - "new": drafts-based UI with spinner counting + orientation/duration settings menu
+//
+// NOTE: IN_PROGRESS_MODE is kept as a legacy alias. If SORA_UI_MODE is not set:
+// - IN_PROGRESS_MODE="activity" => SORA_UI_MODE="old"
+// - IN_PROGRESS_MODE="drafts"  => SORA_UI_MODE="new"
+const LEGACY_IN_PROGRESS_MODE = (fromConfig("IN_PROGRESS_MODE") || "auto")
   .toString()
   .toLowerCase();
+const SORA_UI_MODE = (() => {
+  const explicit = (fromConfig("SORA_UI_MODE") || "").toString().toLowerCase().trim();
+  if (explicit) return explicit;
+  if (LEGACY_IN_PROGRESS_MODE === "activity") return "old";
+  if (LEGACY_IN_PROGRESS_MODE === "drafts") return "new";
+  return "auto";
+})();
 
 // Prompt parsing:
 // - "full": if an item is an object, stringify the entire object and submit it.
@@ -390,12 +401,12 @@ async function readInProgressFromDraftsSpinner(draftsPage) {
 }
 
 async function detectInProgressStrategy(browser, submitPage) {
-  if (IN_PROGRESS_MODE === "activity") {
-    console.log("In-progress strategy forced: activity counter");
+  if (SORA_UI_MODE === "old") {
+    console.log("Sora UI mode: old (activity counter)");
     return { mode: "activity", read: () => readInProgressFromActivityCounter(submitPage) };
   }
-  if (IN_PROGRESS_MODE === "drafts") {
-    console.log("In-progress strategy forced: drafts spinner");
+  if (SORA_UI_MODE === "new") {
+    console.log("Sora UI mode: new (drafts spinner)");
     const draftsPage = await getOrCreateDraftsPage(browser, submitPage);
     return {
       mode: "drafts",
@@ -417,7 +428,7 @@ async function detectInProgressStrategy(browser, submitPage) {
     try {
       const cnt = await submitPage.locator(selectors.inProgressCount).count();
       if (cnt > 0) {
-        console.log("Detected in-progress strategy: activity counter");
+        console.log("Sora UI mode: auto -> old (activity counter found)");
         return { mode: "activity", read: () => readInProgressFromActivityCounter(submitPage) };
       }
     } catch {}
@@ -425,7 +436,7 @@ async function detectInProgressStrategy(browser, submitPage) {
 
   // Strategy B (alternate): drafts page with per-tile spinner overlay.
   const draftsPage = await getOrCreateDraftsPage(browser, submitPage);
-  console.log("Detected in-progress strategy: drafts spinner");
+  console.log("Sora UI mode: auto -> new (fallback to drafts spinner)");
   return {
     mode: "drafts",
     draftsPage,
@@ -665,11 +676,10 @@ async function submitPrompt(page, prompt) {
     await page.waitForTimeout(200);
   } catch {}
   
-  // Apply quick-pick choices if configured.
-  // Mode/setting pickers are dropdowns; we only act if they aren't already set.
-  // Try the new "Orientation/Duration" menu format first; if not detected, fall back to legacy behavior.
-  const appliedNewSettings = await applyNewFormatVideoSettings(page);
-  if (!appliedNewSettings) {
+  // Apply settings based on Sora UI mode (keep old/new isolated).
+  if (SORA_UI_MODE === "new") {
+    await applyNewFormatVideoSettings(page);
+  } else if (SORA_UI_MODE === "old") {
     await applyChoice(page, selectors.modeChoice);
     await page.waitForTimeout(300);
     await applyChoice(page, selectors.aspectChoice);
@@ -680,6 +690,24 @@ async function submitPrompt(page, prompt) {
     await page.waitForTimeout(300);
     await applyVariationsChoice(page, selectors.variationsChoice);
     await page.waitForTimeout(500);
+  } else {
+    // auto: best-effort — attempt old first, and if the new settings menu is present, it will still apply safely.
+    // (We avoid aggressive clicking in new mode by requiring the settings menu to be visible/openable.)
+    const menuVisible = await page.locator(selectors.settingsMenu).first().isVisible().catch(() => false);
+    if (menuVisible) {
+      await applyNewFormatVideoSettings(page);
+    } else {
+      await applyChoice(page, selectors.modeChoice);
+      await page.waitForTimeout(300);
+      await applyChoice(page, selectors.aspectChoice);
+      await page.waitForTimeout(300);
+      await applyChoice(page, selectors.resolutionChoice);
+      await page.waitForTimeout(300);
+      await applyChoice(page, selectors.durationChoice);
+      await page.waitForTimeout(300);
+      await applyVariationsChoice(page, selectors.variationsChoice);
+      await page.waitForTimeout(500);
+    }
   }
 
   // Close any popovers/dropdowns that might have opened.
