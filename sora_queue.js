@@ -49,6 +49,16 @@ const getNumber = (key, fallback) => {
   return Number.isFinite(num) ? num : fallback;
 };
 
+const getNumberAlias = (preferredKey, legacyKeys, fallback) => {
+  const preferred = getNumber(preferredKey, undefined);
+  if (preferred !== undefined) return preferred;
+  for (const k of legacyKeys) {
+    const v = getNumber(k, undefined);
+    if (v !== undefined) return v;
+  }
+  return fallback;
+};
+
 const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 
 // --- CONFIG -----------------------------------------------------------------
@@ -56,8 +66,9 @@ const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 // Remote debugging URL for Arc. Must match the port used when launching Arc.
 const DEBUG_WS = fromConfig("DEBUG_WS") || "http://localhost:9222";
 
-// Maximum concurrent jobs Sora allows (Sora caps at 3).
-const MAX_CONCURRENT = clamp(getNumber("MAX_CONCURRENT", 3), 1, 3);
+// Target number of in-flight generations to maintain (Sora caps at 3).
+// New name: TARGET_IN_FLIGHT. Legacy: MAX_CONCURRENT.
+const TARGET_IN_FLIGHT = clamp(getNumberAlias("TARGET_IN_FLIGHT", ["MAX_CONCURRENT"], 3), 1, 3);
 
 // Polling interval (ms) when all slots are busy.
 const POLL_MS = clamp(getNumber("POLL_MS", 5000), 250, 30000);
@@ -72,9 +83,11 @@ const MIN_SUBMIT_INTERVAL_MS = clamp(
 // Cooldown after 429 or similar errors.
 const BACKOFF_429_MS = clamp(getNumber("BACKOFF_429_MS", 60000), 1000, 300000);
 
-// How many times to run the entire prompts file. Example: 10 prompts + MAX_SUBMITS=2 => 20 total submits.
+// How many times to run the entire prompts file.
+// Example: 10 prompts + PROMPT_FILE_RUNS=2 => 20 total submissions.
 // null => run forever.
-const MAX_SUBMITS = getNumber("MAX_SUBMITS", null);
+// New name: PROMPT_FILE_RUNS. Legacy: MAX_SUBMITS.
+const PROMPT_FILE_RUNS = getNumberAlias("PROMPT_FILE_RUNS", ["MAX_SUBMITS"], null);
 
 // Logging
 const LOG_FILE = fromConfig("LOG_FILE") || null;
@@ -267,7 +280,7 @@ async function readInProgress(page) {
   // If a loading overlay/spinner is present, assume capacity is full.
   if (selectors.loadingOverlay) {
     const loading = await page.$(selectors.loadingOverlay);
-    if (loading) return MAX_CONCURRENT;
+    if (loading) return TARGET_IN_FLIGHT;
   }
 
   // If nothing found, treat as 0 (UI often hides the counter when it's zero).
@@ -599,7 +612,7 @@ async function submitPrompt(page, prompt) {
 
     const count = await readInProgress(page);
 
-    if (count >= MAX_CONCURRENT) {
+    if (count >= TARGET_IN_FLIGHT) {
       await page.waitForTimeout(POLL_MS);
       continue;
     }
@@ -610,15 +623,15 @@ async function submitPrompt(page, prompt) {
       continue;
     }
 
-    // Stop condition: after MAX_SUBMITS full passes through the prompts list.
-    if (MAX_SUBMITS !== null && cycle >= MAX_SUBMITS) {
-      console.log(`Reached MAX_SUBMITS=${MAX_SUBMITS} cycles. Exiting.`);
+    // Stop condition: after PROMPT_FILE_RUNS full passes through the prompts list.
+    if (PROMPT_FILE_RUNS !== null && cycle >= PROMPT_FILE_RUNS) {
+      console.log(`Reached PROMPT_FILE_RUNS=${PROMPT_FILE_RUNS}. Exiting.`);
       break;
     }
 
     const prompt = prompts[promptIndex];
     console.log(
-      `In progress: ${count}/${MAX_CONCURRENT} | prompt ${promptIndex + 1}/${prompts.length} | cycle ${cycle + 1}/${MAX_SUBMITS ?? "∞"}`
+      `In progress: ${count}/${TARGET_IN_FLIGHT} | prompt ${promptIndex + 1}/${prompts.length} | run ${cycle + 1}/${PROMPT_FILE_RUNS ?? "∞"}`
     );
     console.log("Submitting next prompt…");
     const ok = await submitPrompt(page, prompt);
