@@ -131,6 +131,14 @@ const DRAFTS_RECENT_CHECK_COUNT = clamp(
   12
 );
 
+// In-progress detection mode:
+// - "auto": detect best strategy (default)
+// - "activity": force old UI activity counter logic
+// - "drafts": force drafts spinner logic
+const IN_PROGRESS_MODE = (fromConfig("IN_PROGRESS_MODE") || "auto")
+  .toString()
+  .toLowerCase();
+
 // Prompt parsing:
 // - "full": if an item is an object, stringify the entire object and submit it.
 // - "prompt": if an item is an object with {prompt: string}, submit only that field.
@@ -382,6 +390,28 @@ async function readInProgressFromDraftsSpinner(draftsPage) {
 }
 
 async function detectInProgressStrategy(browser, submitPage) {
+  if (IN_PROGRESS_MODE === "activity") {
+    console.log("In-progress strategy forced: activity counter");
+    return { mode: "activity", read: () => readInProgressFromActivityCounter(submitPage) };
+  }
+  if (IN_PROGRESS_MODE === "drafts") {
+    console.log("In-progress strategy forced: drafts spinner");
+    const draftsPage = await getOrCreateDraftsPage(browser, submitPage);
+    return {
+      mode: "drafts",
+      draftsPage,
+      read: async () => {
+        let p = draftsPage;
+        try {
+          if (p.isClosed()) p = await getOrCreateDraftsPage(browser, submitPage);
+        } catch {
+          p = await getOrCreateDraftsPage(browser, submitPage);
+        }
+        return readInProgressFromDraftsSpinner(p);
+      },
+    };
+  }
+
   // Strategy A (original): activity counter exists on this page.
   if (selectors.inProgressCount) {
     try {
