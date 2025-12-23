@@ -178,6 +178,13 @@ loadingOverlay:
   draftsInProgressSpinner:
     fromConfig("SORA_DRAFTS_IN_PROGRESS") ||
     "div.absolute.inset-0.grid.place-items-center",
+
+  // New video settings menu (radix dropdown):
+  // - A trigger button (typically a sliders/adjustments icon).
+  // - Menu content uses [data-radix-menu-content][role="menu"] and items use role="menuitem*" / "menuitemradio".
+  settingsTrigger: fromConfig("SORA_SETTINGS_TRIGGER") || "",
+  settingsMenu: fromConfig("SORA_SETTINGS_MENU") || "div[data-radix-menu-content][role='menu']",
+  orientationChoice: fromConfig("SORA_ORIENTATION") || "",
 };
 
 // Queue of prompts to submit (add more if desired). The script will cycle
@@ -419,6 +426,104 @@ async function applyVariationsChoice(page, label) {
   } catch {}
 }
 
+const mapDurationLabel = (raw) => {
+  if (!raw) return "";
+  const s = String(raw).trim().toLowerCase();
+  if (s === "10s" || s === "10 sec" || s === "10secs" || s === "10 seconds") return "10 seconds";
+  if (s === "15s" || s === "15 sec" || s === "15secs" || s === "15 seconds") return "15 seconds";
+  return raw;
+};
+
+const inferOrientation = (explicitOrientation, aspect) => {
+  if (explicitOrientation) return explicitOrientation;
+  const a = (aspect || "").toString().toLowerCase();
+  // Common mapping: 9:16 => Portrait, 16:9 => Landscape
+  if (a.includes("9:16") || a.includes("portrait")) return "Portrait";
+  if (a.includes("16:9") || a.includes("landscape")) return "Landscape";
+  return "";
+};
+
+async function openSettingsMenu(page) {
+  const menu = page.locator(selectors.settingsMenu).first();
+  if (await menu.count()) return true;
+
+  // Strategy 1: user-provided selector.
+  if (selectors.settingsTrigger) {
+    try {
+      await page.locator(selectors.settingsTrigger).first().click({ timeout: CLICK_TIMEOUT_MS, force: true });
+      await menu.waitFor({ state: "visible", timeout: VISIBLE_TIMEOUT_MS });
+      return true;
+    } catch {}
+  }
+
+  // Strategy 2: click a likely radix menu trigger button.
+  // This targets small icon buttons that control menus.
+  const candidates = page.locator("button[aria-haspopup='menu'], button[aria-expanded]").filter({
+    has: page.locator("svg"),
+  });
+
+  const n = await candidates.count();
+  for (let i = 0; i < Math.min(n, 8); i++) {
+    const btn = candidates.nth(i);
+    try {
+      await btn.click({ timeout: 1000, force: true });
+      await menu.waitFor({ state: "visible", timeout: 1000 });
+      return true;
+    } catch {}
+  }
+
+  return false;
+}
+
+async function applyNewFormatVideoSettings(page) {
+  // New format: only Orientation + Duration exist in a radix menu.
+  // If we can't open/see the menu, return false and let legacy logic run.
+  const opened = await openSettingsMenu(page);
+  if (!opened) return false;
+
+  const menu = page.locator(selectors.settingsMenu).first();
+  const hasOrientationRow = (await menu.locator(":scope >> text=Orientation").count()) > 0;
+  const hasDurationRow = (await menu.locator(":scope >> text=Duration").count()) > 0;
+  if (!hasOrientationRow && !hasDurationRow) return false;
+
+  // Orientation
+  const desiredOrientation = inferOrientation(selectors.orientationChoice, selectors.aspectChoice);
+  if (desiredOrientation) {
+    try {
+      await menu.locator("[role='menuitem']:has-text('Orientation'), [role='menuitemradio']:has-text('Orientation')").first()
+        .click({ timeout: CLICK_TIMEOUT_MS, force: true });
+    } catch {}
+    try {
+      await page
+        .locator("[role='menuitemradio']")
+        .filter({ hasText: desiredOrientation })
+        .first()
+        .click({ timeout: CLICK_TIMEOUT_MS, force: true });
+      // Close menu/submenu
+      await page.keyboard.press("Escape").catch(() => {});
+    } catch {}
+  }
+
+  // Duration
+  const desiredDuration = mapDurationLabel(selectors.durationChoice);
+  if (desiredDuration) {
+    try {
+      await menu.locator("[role='menuitem']:has-text('Duration'), [role='menuitemradio']:has-text('Duration')").first()
+        .click({ timeout: CLICK_TIMEOUT_MS, force: true });
+    } catch {}
+    try {
+      await page
+        .locator("[role='menuitemradio']")
+        .filter({ hasText: desiredDuration })
+        .first()
+        .click({ timeout: CLICK_TIMEOUT_MS, force: true });
+      await page.keyboard.press("Escape").catch(() => {});
+    } catch {}
+  }
+
+  return true;
+}
+
 const isGenEndpoint = (url) =>
   (url.includes("backend/") &&
     (url.includes("video_gen") || url.includes("image_gen") || url.includes("gen")));
@@ -473,16 +578,20 @@ async function submitPrompt(page, prompt) {
   
   // Apply quick-pick choices if configured.
   // Mode/setting pickers are dropdowns; we only act if they aren't already set.
-  await applyChoice(page, selectors.modeChoice);
-  await page.waitForTimeout(300);
-  await applyChoice(page, selectors.aspectChoice);
-  await page.waitForTimeout(300);
-  await applyChoice(page, selectors.resolutionChoice);
-  await page.waitForTimeout(300);
-  await applyChoice(page, selectors.durationChoice);
-  await page.waitForTimeout(300);
-  await applyVariationsChoice(page, selectors.variationsChoice);
-  await page.waitForTimeout(500);
+  // Try the new "Orientation/Duration" menu format first; if not detected, fall back to legacy behavior.
+  const appliedNewSettings = await applyNewFormatVideoSettings(page);
+  if (!appliedNewSettings) {
+    await applyChoice(page, selectors.modeChoice);
+    await page.waitForTimeout(300);
+    await applyChoice(page, selectors.aspectChoice);
+    await page.waitForTimeout(300);
+    await applyChoice(page, selectors.resolutionChoice);
+    await page.waitForTimeout(300);
+    await applyChoice(page, selectors.durationChoice);
+    await page.waitForTimeout(300);
+    await applyVariationsChoice(page, selectors.variationsChoice);
+    await page.waitForTimeout(500);
+  }
 
   // Close any popovers/dropdowns that might have opened.
   try {
