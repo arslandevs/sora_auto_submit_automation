@@ -6,6 +6,8 @@
   "SORA_LOADING": "div.flex.h-full.w-full.items-center.justify-center.bg-token-bg-secondary svg.animate-spin",
   "SORA_DRAFTS_URL": "https://sora.chatgpt.com/drafts",
   "SORA_DRAFTS_IN_PROGRESS": "div.absolute.inset-0.grid.place-items-center",
+  "SORA_DRAFTS_GRID": "xpath=/html/body/main/div[3]/div[1]/div/div/div/div/div[2]/div/div[1]",
+  "DRAFTS_RECENT_CHECK_COUNT": 3,
   "SORA_SETTINGS_TRIGGER": "",
   "SORA_SETTINGS_MENU": "div[data-radix-menu-content][role='menu']",
   "SORA_ORIENTATION": "",

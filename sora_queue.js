@@ -124,6 +124,13 @@ const DRAFTS_SPINNER_SAFETY_MARGIN = clamp(
   3
 );
 
+// In drafts mode, only check the most recent N tiles (default: MAX_CONCURRENT) to infer in-progress.
+const DRAFTS_RECENT_CHECK_COUNT = clamp(
+  getNumber("DRAFTS_RECENT_CHECK_COUNT", MAX_CONCURRENT),
+  1,
+  12
+);
+
 // Prompt parsing:
 // - "full": if an item is an object, stringify the entire object and submit it.
 // - "prompt": if an item is an object with {prompt: string}, submit only that field.
@@ -192,6 +199,10 @@ loadingOverlay:
   draftsInProgressSpinner:
     fromConfig("SORA_DRAFTS_IN_PROGRESS") ||
     "div.absolute.inset-0.grid.place-items-center",
+  // Container that holds the drafts grid/virtualized list. Can be a CSS selector or an XPath selector (prefix with "xpath=").
+  draftsGrid:
+    fromConfig("SORA_DRAFTS_GRID") ||
+    "xpath=/html/body/main/div[3]/div[1]/div/div/div/div/div[2]/div/div[1]",
 
   // New video settings menu (radix dropdown):
   // - A trigger button (typically a sliders/adjustments icon).
@@ -344,6 +355,23 @@ async function readInProgressFromDraftsSpinner(draftsPage) {
   if (!selectors.draftsInProgressSpinner) return 0;
   try {
     // Each "in progress" tile shows a centered circular spinner overlay.
+    // Only check the most recent N tiles in the drafts grid to avoid counting unrelated spinners.
+    const grid = draftsPage.locator(selectors.draftsGrid).first();
+    const hasGrid = (await grid.count()) > 0;
+    if (hasGrid) {
+      const tiles = grid.locator("[data-index]");
+      const nTiles = await tiles.count();
+      const toCheck = Math.min(DRAFTS_RECENT_CHECK_COUNT, nTiles);
+      let inProg = 0;
+      for (let i = 0; i < toCheck; i++) {
+        const tile = tiles.nth(i);
+        const spinning = await tile.locator(selectors.draftsInProgressSpinner).count();
+        if (spinning > 0) inProg += 1;
+      }
+      return Math.min(MAX_CONCURRENT, inProg + DRAFTS_SPINNER_SAFETY_MARGIN);
+    }
+
+    // Fallback: count all spinners on the page (less accurate).
     const n = await draftsPage.locator(selectors.draftsInProgressSpinner).count();
     const base = Number.isFinite(n) ? Math.max(0, n) : 0;
     return Math.min(MAX_CONCURRENT, base + DRAFTS_SPINNER_SAFETY_MARGIN);
