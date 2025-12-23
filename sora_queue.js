@@ -75,6 +75,9 @@ const BACKOFF_429_MS = clamp(getNumber("BACKOFF_429_MS", 60000), 1000, 300000);
 // Optional cap on total successful submissions before exiting.
 const MAX_SUBMITS = getNumber("MAX_SUBMITS", null);
 
+// Logging
+const LOG_FILE = fromConfig("LOG_FILE") || null;
+
 // Tunables (timeouts / delays)
 const FILL_TIMEOUT_MS = clamp(getNumber("FILL_TIMEOUT_MS", 30000), 1000, 120000);
 const CLICK_TIMEOUT_MS = clamp(getNumber("CLICK_TIMEOUT_MS", 10000), 1000, 120000);
@@ -94,6 +97,28 @@ const AFTER_SUBMIT_WAIT_MS = clamp(
   0,
   60000
 );
+
+// Logging setup
+let logStream = null;
+try {
+  if (LOG_FILE) {
+    fs.mkdirSync(path.dirname(LOG_FILE), { recursive: true });
+    logStream = fs.createWriteStream(LOG_FILE, { flags: "a" });
+  }
+} catch (err) {
+  console.error("Failed to open log file", LOG_FILE, err);
+}
+
+const originalLog = console.log;
+const log = (...args) => {
+  const msg = args.map((v) => (typeof v === "string" ? v : JSON.stringify(v))).join(" ");
+  originalLog(msg);
+  if (logStream) {
+    const line = `[${new Date().toISOString()}] ${msg}\n`;
+    logStream.write(line);
+  }
+};
+console.log = log;
 
 // CSS selectors for Sora UI. Update these to real selectors from the page.
 const selectors = {
@@ -554,11 +579,21 @@ async function submitPrompt(page, prompt) {
     await browser.close();
   } catch {}
   process.exitCode = process.exitCode || 0;
+  if (logStream) {
+    try {
+      logStream.end();
+    } catch {}
+  }
   // Ensure we actually terminate even if something keeps the event loop alive.
   process.exit(process.exitCode);
 })().catch((err) => {
   console.error(err);
   process.exitCode = 1;
+  if (logStream) {
+    try {
+      logStream.end();
+    } catch {}
+  }
   process.exit(1);
 });
 
