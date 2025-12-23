@@ -1,78 +1,155 @@
 [
     {
       "cinematography": {
-        "style": "Fujifilm 35mm film emulation, soft halation, warm tones.",
+        "style": "Fujifilm 35mm film emulation, soft grain, warm halation.",
         "sequence": [
-          {"0s-3s": "Wide shot of a student sitting at a desk, looking stressed, staring at her laptop."},
-          {"3s-6s": "Close-up of model’s eyes, looking frustrated as she reads the AI-detected error message on the screen."},
-          {"6s-9s": "Top-down shot of the student clicking on the 'Humanise' button on the AIHumaniser.pro interface."},
-          {"9s-12s": "Medium shot, model leans back with a smile, reading the now humanized content on her laptop."}
+          {"0s-4s": "Wide shot of young Norwegian student at wooden desk, winter light through window."},
+          {"4s-8s": "Close-up, speaking confidently to camera."},
+          {"8s-12s": "Medium shot, holding clean paper proudly."}
         ],
         "actions": [
-          {"Shot 1": "Model sits at the desk, eyes scanning the screen with a worried expression."},
-          {"Shot 2": "Model looks frustrated, eyes narrowing at the 'AI DETECTED' warning on the screen."},
-          {"Shot 3": "Model confidently clicks the 'Humanise' button, anticipation in her expression."},
-          {"Shot 4": "Model smiles, relieved, as she sees the content now read naturally on the screen."}
+          {"Shot 1": "Student looks calm, ready to explain."},
+          {"Shot 2": "Direct eye contact, confident tone."},
+          {"Shot 3": "Shows paper with a relieved smile."}
         ],
-        "dialogue": "AIHumaniser.pro made my AI-generated text sound like it came from me. It passed my exams effortlessly!",
-        "background_sound": "Gentle instrumental music, soft typing sounds."
+        "dialogue": "My AI text failed every check. Then I used aihumaniser.pro and now it sounds natural. I passed my exam easily.",
+        "background_sound": "Soft room tone, light piano."
       }
     },
     {
       "cinematography": {
-        "style": "Fujifilm 35mm film emulation, cool tones, soft grain.",
+        "style": "Fujifilm 35mm film emulation, cozy warm tones.",
         "sequence": [
-          {"0s-3s": "Wide shot of the student sitting at her desk, looking at her laptop, feeling defeated."},
-          {"3s-6s": "Low angle shot, the camera tilts upward as the model clicks on AIHumaniser.pro."},
-          {"6s-9s": "Eye-level medium shot of the student, showing the now humanized text on the screen."},
-          {"9s-12s": "Close-up shot of the student’s hands writing the same clean content on a piece of paper."}
+          {"0s-4s": "Wide shot of young German student in modern study room."},
+          {"4s-8s": "Close-up, student speaks directly."},
+          {"8s-12s": "Medium shot, shows handwritten page."}
         ],
         "actions": [
-          {"Shot 1": "Model appears overwhelmed and discouraged while staring at her laptop."},
-          {"Shot 2": "Model's hand confidently clicks the 'Humanise' button, with a determined look."},
-          {"Shot 3": "Model looks down at the screen, reading the transformed, natural text with a sigh of relief."},
-          {"Shot 4": "Model writes down the clean text on paper, visibly more confident."}
+          {"Shot 1": "Student sits upright, focused."},
+          {"Shot 2": "Leans forward, explaining clearly."},
+          {"Shot 3": "Raises paper with proud smile."}
         ],
-        "dialogue": "I couldn't believe how quickly my AI text turned into something natural with aihumaniser.pro. It helped me pass my exam!",
-        "background_sound": "Calm background music with the sound of light typing and writing."
+        "dialogue": "My writing sounded robotic before. Aihumaniser.pro fixed it fast and made it feel human. That saved my grade.",
+        "background_sound": "Soft ambient room noise."
       }
     },
     {
       "cinematography": {
-        "style": "Fujifilm 35mm film emulation, warm golden halation, soft film grain.",
+        "style": "Fujifilm 35mm film emulation, cool daylight, gentle grain.",
         "sequence": [
-          {"0s-3s": "Wide shot, student sitting at a desk, visibly stressed, with papers and books scattered around."},
-          {"3s-6s": "Top-down angle, close-up of her hands typing on the laptop as she opens AIHumaniser.pro."},
-          {"6s-9s": "Medium shot, the student reads the screen, her face relaxing as the AI-generated text turns natural."},
-          {"9s-12s": "Eye-level shot, model showing the paper with clean content, smiling triumphantly."}
+          {"0s-4s": "Wide shot of young Swedish student near window desk."},
+          {"4s-8s": "Close-up, speaking calmly."},
+          {"8s-12s": "Medium shot, holding clean text page."}
         ],
         "actions": [
-          {"Shot 1": "Model looks down at her papers, sighing in frustration."},
-          {"Shot 2": "Model's hands click on the 'Humanise' button, her face lighting up with hope."},
-          {"Shot 3": "Model relaxes, looking at the screen as the AI-generated text transforms into something readable."},
-          {"Shot 4": "Model holds up a piece of paper with the now clean text, smiling in victory."}
+          {"Shot 1": "Student turns to camera."},
+          {"Shot 2": "Speaks with relaxed confidence."},
+          {"Shot 3": "Shows paper with relief."}
         ],
-        "dialogue": "AIHumaniser.pro took my robotic AI text and made it sound human. I passed my exam with flying colors!",
-        "background_sound": "Quiet background music, the sound of paper shuffling and light typing."
+        "dialogue": "I was worried my AI essay would get flagged. Aihumaniser.pro made it sound real. Now I feel confident again.",
+        "background_sound": "Light wind, soft ambience."
       }
     },
     {
       "cinematography": {
-        "style": "Fujifilm 35mm film emulation, warm color grading, soft light halation.",
+        "style": "Fujifilm 35mm film emulation, warm evening tones.",
         "sequence": [
-          {"0s-3s": "Wide shot of the student sitting at her desk, looking at her laptop with a frustrated expression."},
-          {"3s-6s": "Low angle shot, camera tilts upwards to show the student clicking the 'Humanise' button."},
-          {"6s-9s": "Medium shot, student smiling as she reads the now human-like text on her laptop."},
-          {"9s-12s": "Close-up shot, model flipping through the clean written paper, showing her results."}
+          {"0s-4s": "Wide shot of young Italian student in cozy apartment."},
+          {"4s-8s": "Close-up, expressive talking."},
+          {"8s-12s": "Medium shot, holding paper toward camera."}
         ],
         "actions": [
-          {"Shot 1": "Model appears stressed, staring at the screen with unreadable AI-generated text."},
-          {"Shot 2": "Model clicks the 'Humanise' button, her face filled with anticipation."},
-          {"Shot 3": "Model looks at the screen, surprised and relieved as the content now reads naturally."},
-          {"Shot 4": "Model flips through her paper, showing the natural content that helped her pass."}
+          {"Shot 1": "Student smiles slightly."},
+          {"Shot 2": "Speaks with hand gestures."},
+          {"Shot 3": "Shows paper with pride."}
         ],
-        "dialogue": "I struggled with stiff AI text, but aihumaniser.pro turned everything into natural, readable content. It helped me pass my exam with ease!",
-        "background_sound": "Soft background music, light typing sounds."
+        "dialogue": "My AI text felt fake. After aihumaniser.pro it reads like my own words. That helped me pass.",
+        "background_sound": "Soft city hum, room tone."
+      }
+    },
+    {
+      "cinematography": {
+        "style": "Fujifilm 35mm film emulation, soft golden light.",
+        "sequence": [
+          {"0s-4s": "Wide shot of young Turkish student at desk, books around."},
+          {"4s-8s": "Close-up, confident eye contact."},
+          {"8s-12s": "Medium shot, clean paper visible."}
+        ],
+        "actions": [
+          {"Shot 1": "Student nods slightly."},
+          {"Shot 2": "Explains clearly."},
+          {"Shot 3": "Holds paper with relief."}
+        ],
+        "dialogue": "AI detectors kept failing my work. Aihumaniser.pro fixed the tone and now it sounds human.",
+        "background_sound": "Quiet room ambience."
+      }
+    },
+    {
+      "cinematography": {
+        "style": "Fujifilm 35mm film emulation, bright natural light.",
+        "sequence": [
+          {"0s-4s": "Wide shot of young Spanish student near balcony desk."},
+          {"4s-8s": "Close-up, energetic talking."},
+          {"8s-12s": "Medium shot, showing clean page."}
+        ],
+        "actions": [
+          {"Shot 1": "Student smiles to camera."},
+          {"Shot 2": "Speaks with enthusiasm."},
+          {"Shot 3": "Shows paper proudly."}
+        ],
+        "dialogue": "My AI draft felt cold. Aihumaniser.pro made it sound like me. That changed everything for my exam.",
+        "background_sound": "Soft daylight ambience."
+      }
+    },
+    {
+      "cinematography": {
+        "style": "Fujifilm 35mm film emulation, warm desk lamp glow.",
+        "sequence": [
+          {"0s-4s": "Wide shot of young Polish student studying late."},
+          {"4s-8s": "Close-up, serious then relieved tone."},
+          {"8s-12s": "Medium shot, shows finished paper."}
+        ],
+        "actions": [
+          {"Shot 1": "Student looks focused."},
+          {"Shot 2": "Explains problem and solution."},
+          {"Shot 3": "Holds paper with smile."}
+        ],
+        "dialogue": "My essay kept getting flagged. Aihumaniser.pro fixed the style. Now it reads natural and clean.",
+        "background_sound": "Quiet night room tone."
+      }
+    },
+    {
+      "cinematography": {
+        "style": "Fujifilm 35mm film emulation, soft pastel lighting.",
+        "sequence": [
+          {"0s-4s": "Wide shot of young Finnish student by window."},
+          {"4s-8s": "Close-up, calm confident voice."},
+          {"8s-12s": "Medium shot, holding neat paper."}
+        ],
+        "actions": [
+          {"Shot 1": "Student turns toward camera."},
+          {"Shot 2": "Speaks softly but clearly."},
+          {"Shot 3": "Shows paper with calm smile."}
+        ],
+        "dialogue": "AI text sounded wrong before. With aihumaniser.pro it feels real. That helped me succeed.",
+        "background_sound": "Soft wind, indoor ambience."
+      }
+    },
+    {
+      "cinematography": {
+        "style": "Fujifilm 35mm film emulation, cozy neutral tones.",
+        "sequence": [
+          {"0s-4s": "Wide shot of young Austrian student at tidy desk."},
+          {"4s-8s": "Close-up, friendly direct talk."},
+          {"8s-12s": "Medium shot, clean paper shown."}
+        ],
+        "actions": [
+          {"Shot 1": "Student smiles politely."},
+          {"Shot 2": "Explains confidently."},
+          {"Shot 3": "Shows paper with relief."}
+        ],
+        "dialogue": "My AI content felt stiff. Aihumaniser.pro made it natural. Now I’m not worried anymore.",
+        "background_sound": "Soft indoor ambience."
       }
     }
   ]
