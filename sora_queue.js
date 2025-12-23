@@ -1,0 +1,509 @@
+/**
+ * Sora queue automation.
+ *
+ * Assumes Arc is launched with remote debugging enabled and the user is already
+ * logged in to Sora in an open tab. The script attaches to the existing Arc
+ * profile via CDP, watches the in-progress counter, and submits prompts to keep
+ * three jobs running while the script is alive.
+ *
+ * Usage:
+ *   1) Copy config.example.json to config.json and set selectors/tuning.
+ *   2) Quit Arc if running, then start with:
+ *      /Applications/Arc.app/Contents/MacOS/Arc --remote-debugging-port=9222 --profile-directory=Market
+ *   3) Open your Sora tab and stay logged in.
+ *   4) In this directory: npm install
+ *   5) Run: node sora_queue.js  (or npm run queue)
+ */
+
+import "dotenv/config";
+import fs from "fs";
+import path from "path";
+import { chromium } from "playwright";
+
+const loadConfigFile = () => {
+  const cfgPath =
+    process.env.CONFIG_FILE ||
+    path.join(process.cwd(), "config.json"); // default local config
+  if (!fs.existsSync(cfgPath)) return {};
+  try {
+    const txt = fs.readFileSync(cfgPath, "utf-8");
+    return JSON.parse(txt);
+  } catch (err) {
+    console.error("Failed to parse config file", cfgPath, err);
+    return {};
+  }
+};
+
+const configFile = loadConfigFile();
+
+const fromConfig = (key) => {
+  if (process.env[key] !== undefined) return process.env[key];
+  if (configFile[key] !== undefined) return configFile[key];
+  return undefined;
+};
+
+const getNumber = (key, fallback) => {
+  const raw = fromConfig(key);
+  if (raw === undefined || raw === null || raw === "") return fallback;
+  const num = Number(raw);
+  return Number.isFinite(num) ? num : fallback;
+};
+
+const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+
+// --- CONFIG -----------------------------------------------------------------
+
+// Remote debugging URL for Arc. Must match the port used when launching Arc.
+const DEBUG_WS = fromConfig("DEBUG_WS") || "http://localhost:9222";
+
+// Maximum concurrent jobs Sora allows (Sora caps at 3).
+const MAX_CONCURRENT = clamp(getNumber("MAX_CONCURRENT", 3), 1, 3);
+
+// Polling interval (ms) when all slots are busy.
+const POLL_MS = clamp(getNumber("POLL_MS", 5000), 500, 30000);
+
+// Minimum gap between submissions to avoid rate limits.
+const MIN_SUBMIT_INTERVAL_MS = clamp(
+  getNumber("MIN_SUBMIT_INTERVAL_MS", 12000),
+  3000,
+  60000
+);
+
+// Cooldown after 429 or similar errors.
+const BACKOFF_429_MS = clamp(getNumber("BACKOFF_429_MS", 60000), 5000, 300000);
+
+// CSS selectors for Sora UI. Update these to real selectors from the page.
+const selectors = {
+  // Element that displays "X/3" or similar for in-progress jobs. If unavailable,
+  // we fall back to checking whether the submit button is disabled.
+  inProgressCount:
+    fromConfig("SORA_IN_PROGRESS") || "CSS_SELECTOR_FOR_IN_PROGRESS_COUNT",
+  // Prompt text area/input where the cinematic prompt goes.
+  promptTextarea:
+    fromConfig("SORA_PROMPT") ||
+    "textarea.flex.w-full.rounded-md.text-sm.placeholder\\:text-token-text-secondary.focus-visible\\:outline-none.disabled\\:cursor-not-allowed.disabled\\:opacity-50.\\!overflow-x-hidden.tablet\\:max-h-\\[80vh\\].bg-transparent.px-2.py-3.max-tablet\\:flex-1",
+  // Button that triggers submission (Create video).
+  submitButton:
+    fromConfig("SORA_SUBMIT") ||
+    'button:has-text("Create video"), button:has(span.sr-only:has-text("Create video"))',
+// Loading overlay/spinner shown while videos are in progress.
+loadingOverlay:
+    fromConfig("SORA_LOADING") ||
+  "div.flex.h-full.w-full.items-center.justify-center.bg-token-bg-secondary svg.animate-spin",
+  // Quick-pick buttons for aspect, resolution, duration, variations (selected by text).
+  aspectChoice: fromConfig("SORA_ASPECT") || "",
+  resolutionChoice: fromConfig("SORA_RESOLUTION") || "",
+  durationChoice: fromConfig("SORA_DURATION") || "",
+  variationsChoice: fromConfig("SORA_VARIATIONS") || "",
+  modeChoice: fromConfig("SORA_MODE") || "",
+};
+
+// Queue of prompts to submit (add more if desired). The script will cycle
+// through this list repeatedly to keep 3 in-flight jobs while running.
+const PROMPTS_FILE =
+  fromConfig("PROMPTS_FILE") || path.join(process.cwd(), "prompts.json");
+
+const DEFAULT_PROMPTS = [
+  `10-second cinematic intro, inspired by Christopher Nolan’s moody style.
+Shot on a Sony mirrorless camera with a 50mm f/1.8 prime lens, shallow depth of field, 16:9 horizontal, 24fps, dramatic contrast.
+
+0–2s — Cold Night Setup
+Interior, small Russian student room at night. Only a warm desk lamp and the cool blue glow of the PC monitor.
+Camera: slow dolly-in on the back of a young Russian girl student sitting at her desk. 50mm f1.8, background softly blurred, light spilling over her shoulders. Subtle ticking sound, distant city noise.
+
+2–4s — The Struggle
+Over-the-shoulder shot, 50mm. We see a nearly blank essay page, blinking cursor, and a failed AI detector result in red (“AI detected”). Crumpled notes in Cyrillic around the keyboard.
+She exhales in frustration, runs a hand through her hair. Slight handheld feel, like a Nolan character under pressure.
+
+4–6s — The Turning Point
+Close-up on her tired eyes, reflections of text on the screen.
+Cut to a low-angle 50mm shot of the monitor as she copies stiff AI-generated text, then types into a search bar: “humanise AI text”.
+She finds aihumaniser.pro. Subtle musical swell.
+
+6–8s — The Transformation
+Stylized UI macro-shot, 50mm at f1.8, super shallow depth of field.
+She pastes the robotic text into the AI Humaniser interface and hits a glowing “Humanise” button.
+The text gradually morphs into warm, fluid, human-sounding sentences.
+Color grade shifts: shadows stay cool, but warm highlights bloom on her face and hands, like hope breaking through. Nolan-style contrast and controlled light.
+
+8–10s — Resolution & Tagline
+Medium shot from the side: she leans back, finally calm, faint smile.
+On screen, the AI detector now shows green: “Human-like ✓”.
+Camera orbits slowly around her at 50mm, background softly out of focus, desk lamp forming a beautiful bokeh.
+As the camera settles, logo + URL fade in: AIHumaniser.pro
+Final text on screen: “AIHumaniser.pro is the way to go.”
+
+Overall mood: dark, focused, high contrast, controlled camera movement, minimal color palette, subtle ticking or low drone, cinematic film look.
+
+Voiceover (pick one):
+A) “Her words sounded fake. Every detector screamed AI. One search, one click… AI Humaniser took that cold, robotic text… and turned it into something truly human. AIHumaniser.pro is the way to go.”
+B) “Stuck with an AI-sounding essay? Detectors flashing red? Paste it into AI Humaniser… and watch it become warm, natural, human. AIHumaniser.pro is the way to go.”`,
+];
+
+const loadPrompts = () => {
+  if (fs.existsSync(PROMPTS_FILE)) {
+    try {
+      const raw = fs.readFileSync(PROMPTS_FILE, "utf-8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        if (parsed.length === 0) {
+          console.warn(
+            `Prompts file ${PROMPTS_FILE} array is empty; using defaults`
+          );
+          return DEFAULT_PROMPTS;
+        }
+        // Normalize array items to strings.
+        return parsed.map((item) =>
+          typeof item === "string" ? item : JSON.stringify(item, null, 2)
+        );
+      }
+      // If a single object/string is provided, wrap it.
+      if (typeof parsed === "string") return [parsed];
+      if (parsed && typeof parsed === "object")
+        return [JSON.stringify(parsed, null, 2)];
+
+      console.warn(`Prompts file ${PROMPTS_FILE} not usable; using defaults`);
+    } catch (err) {
+      console.warn(`Failed to read prompts file ${PROMPTS_FILE}; using defaults`, err);
+    }
+  } else {
+    console.warn(`Prompts file ${PROMPTS_FILE} not found; using defaults`);
+  }
+  return DEFAULT_PROMPTS;
+};
+
+// --- HELPERS ----------------------------------------------------------------
+
+async function getSoraPage(browser) {
+  const contexts = browser.contexts();
+  for (const ctx of contexts) {
+    for (const page of ctx.pages()) {
+      if (page.url().toLowerCase().includes("sora")) return page;
+    }
+  }
+  return contexts[0]?.pages()[0];
+}
+
+async function readInProgress(page) {
+  // Prefer explicit counter if provided. Some pages can render multiple matching nodes;
+  // we take the max numeric value found.
+  if (selectors.inProgressCount) {
+    const els = await page.$$(selectors.inProgressCount);
+    if (els.length) {
+      const nums = [];
+      for (const el of els) {
+        try {
+          const txt = (await el.innerText()).trim();
+          const num = parseInt(txt.replace(/\D+/g, ""), 10);
+          if (Number.isFinite(num)) nums.push(num);
+        } catch {}
+      }
+      if (nums.length) return Math.max(...nums);
+    }
+  }
+
+  // If a loading overlay/spinner is present, assume capacity is full.
+  if (selectors.loadingOverlay) {
+    const loading = await page.$(selectors.loadingOverlay);
+    if (loading) return MAX_CONCURRENT;
+  }
+
+  // If nothing found, treat as 0 (UI often hides the counter when it's zero).
+  return 0;
+}
+
+async function isSubmitEnabled(page) {
+  const submitSelectors = selectors.submitButton.split(',').map(s => s.trim());
+  for (const selector of submitSelectors) {
+    try {
+      const btn = await page.$(selector);
+      if (btn) {
+        const disabled =
+          (await btn.getAttribute("disabled")) !== null ||
+          (await btn.getAttribute("data-disabled")) === "true";
+        if (!disabled) return true;
+      }
+    } catch {}
+  }
+  return false;
+}
+
+async function applyChoice(page, label) {
+  if (!label) return;
+  // If the choice label is already visible in the toolbar, don't click it (clicking
+  // often opens a dropdown and can block submission).
+  const already = await page.locator(`button:has-text("${label}")`).count();
+  if (already > 0) return;
+  console.log(`Choice "${label}" not found in toolbar; skipping auto-select.`);
+}
+
+const isGenEndpoint = (url) =>
+  (url.includes("backend/") &&
+    (url.includes("video_gen") || url.includes("image_gen") || url.includes("gen")));
+
+async function waitForGenRequest(page, timeoutMs) {
+  return page
+    .waitForRequest(
+      (req) => isGenEndpoint(req.url()),
+      { timeout: timeoutMs }
+    )
+    .catch(() => null);
+}
+
+async function submitPrompt(page, prompt) {
+  // Ensure page is active and focused
+  await page.bringToFront().catch(() => {});
+  await page.waitForTimeout(200);
+  
+  // Activate the page by clicking on it to ensure it's interactive
+  try {
+    await page.evaluate(() => {
+      window.focus();
+      document.body.focus();
+    });
+  } catch {}
+  
+  // Wait for page to be in a ready state
+  try {
+    await page.waitForLoadState('networkidle').catch(() => {});
+  } catch {}
+  
+  // Focus prompt area explicitly to avoid needing user interaction.
+  try {
+    const promptEl = await page.$(selectors.promptTextarea);
+    if (promptEl) {
+      await promptEl.click({ timeout: 5000, force: true });
+      await page.waitForTimeout(200);
+    }
+  } catch {}
+  
+  await page.fill(selectors.promptTextarea, "");
+  await page.fill(selectors.promptTextarea, prompt);
+  
+  // Wait a bit for the UI to register the text
+  await page.waitForTimeout(500);
+  
+  // Dismiss any modal/overlay that might intercept clicks.
+  try {
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(200);
+  } catch {}
+  
+  // Apply quick-pick choices if configured.
+  // Mode/setting pickers are dropdowns; we only act if they aren't already set.
+  await applyChoice(page, selectors.modeChoice);
+  await page.waitForTimeout(300);
+  await applyChoice(page, selectors.aspectChoice);
+  await page.waitForTimeout(300);
+  await applyChoice(page, selectors.resolutionChoice);
+  await page.waitForTimeout(300);
+  await applyChoice(page, selectors.durationChoice);
+  await page.waitForTimeout(300);
+  await applyChoice(page, selectors.variationsChoice);
+  await page.waitForTimeout(500);
+
+  // Close any popovers/dropdowns that might have opened.
+  try {
+    await page.keyboard.press("Escape");
+  } catch {}
+
+  // Try to get the submit button enabled: small loop to press Enter if needed.
+  for (let i = 0; i < 5; i += 1) {
+    const enabled = await isSubmitEnabled(page);
+    if (enabled) break;
+    try {
+      await page.keyboard.press("Enter");
+    } catch {}
+    await page.waitForTimeout(500);
+  }
+
+  const enabledNow = await isSubmitEnabled(page);
+  if (!enabledNow) {
+    console.log("Submit still disabled after prompt + settings; skipping submit.");
+    return false;
+  }
+
+  // Observe the backend request/response so we can verify a real submit happened.
+  const reqPromise = waitForGenRequest(page, 20000);
+
+  // Try multiple selector strategies
+  const submitSelectors = selectors.submitButton.split(',').map(s => s.trim());
+  let clicked = false;
+  
+  for (const selector of submitSelectors) {
+    try {
+      const submit = page.locator(selector).first();
+      await submit.waitFor({ state: 'visible', timeout: 5000 });
+      const isEnabled = await isSubmitEnabled(page);
+      if (!isEnabled) {
+        console.log(`Submit button disabled, selector: ${selector}`);
+        continue;
+      }
+      
+      // Ensure page is focused before clicking
+      await page.bringToFront().catch(() => {});
+      await page.evaluate(() => {
+        window.focus();
+        document.body.focus();
+      }).catch(() => {});
+      await page.waitForTimeout(200);
+      
+      // Try normal click first
+      try {
+        await submit.click({ timeout: 10000 });
+        clicked = true;
+        console.log(`Successfully clicked submit with selector: ${selector}`);
+        break;
+      } catch (err) {
+        console.log(`Normal click failed for ${selector}, trying force click...`);
+      }
+      
+      // Try force click
+      try {
+        await submit.click({ timeout: 10000, force: true });
+        clicked = true;
+        console.log(`Successfully force-clicked submit with selector: ${selector}`);
+        break;
+      } catch (err) {
+        console.log(`Force click failed for ${selector}, trying JS click...`);
+      }
+      
+      // Try JS click as last resort - with proper event dispatch
+      try {
+        const handle = await submit.elementHandle();
+        if (handle) {
+          await page.evaluate((el) => {
+            el.scrollIntoView({ behavior: 'instant', block: 'center' });
+            // Dispatch proper mouse events to simulate real click
+            const mouseDown = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+            const mouseUp = new MouseEvent('mouseup', { bubbles: true, cancelable: true });
+            const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+            el.dispatchEvent(mouseDown);
+            el.dispatchEvent(mouseUp);
+            el.dispatchEvent(click);
+          }, handle);
+          clicked = true;
+          console.log(`Successfully JS-clicked submit with selector: ${selector}`);
+          break;
+        }
+      } catch (err) {
+        console.log(`JS click failed for ${selector}`);
+      }
+    } catch (err) {
+      console.log(`Selector ${selector} not found or error: ${err.message}`);
+      continue;
+    }
+  }
+  
+  if (!clicked) {
+    throw new Error('Failed to click submit button with all strategies');
+  }
+
+  // If no gen request was observed, try keyboard submit (some UIs require it).
+  let req = await reqPromise;
+  if (!req) {
+    for (const key of ["Meta+Enter", "Enter"]) {
+      console.log(`No gen request observed. Trying keypress: ${key}`);
+      const p = waitForGenRequest(page, 5000);
+      try {
+        await page.keyboard.press(key);
+      } catch {}
+      req = await p;
+      if (req) break;
+    }
+  }
+
+  if (!req) {
+    console.log("No /backend/*gen POST request observed after submit attempts.");
+    return false;
+  }
+
+  const reqUrl = req.url();
+  console.log(`Gen request: ${req.method()} ${reqUrl}`);
+  const res = await page
+    .waitForResponse((r) => r.url() === reqUrl, { timeout: 20000 })
+    .catch(() => null);
+
+  if (!res) {
+    console.log("No response observed for gen request.");
+    return false;
+  }
+
+  console.log(`Gen response: ${res.status()} ${res.url()}`);
+  return res.status() === 200;
+}
+
+// --- MAIN -------------------------------------------------------------------
+
+(async () => {
+  console.log("Connecting to Arc via CDP:", DEBUG_WS);
+  const browser = await chromium.connectOverCDP(DEBUG_WS);
+  const page = await getSoraPage(browser);
+  if (!page) throw new Error("No Sora page found; open it in Arc first.");
+
+  console.log("Connected. Maintaining queue…");
+
+  // Track rate limits from network responses.
+  let backoffUntil = 0;
+  page.on("response", (res) => {
+    try {
+      const url = res.url();
+      if (!isGenEndpoint(url)) return;
+      const status = res.status();
+      if (status === 429) {
+        backoffUntil = Date.now() + BACKOFF_429_MS;
+        console.log(
+          `Received 429 from ${url}. Backing off for ${BACKOFF_429_MS / 1000}s`
+        );
+      }
+    } catch (err) {
+      // Swallow logging errors.
+      console.error("response handler error", err);
+    }
+  });
+
+  let idx = 0;
+  let lastAttemptTs = 0;
+  const prompts = loadPrompts();
+
+  while (true) {
+    const now = Date.now();
+    if (now < backoffUntil) {
+      const waitMs = Math.min(POLL_MS, backoffUntil - now);
+      console.log(`In backoff for ${waitMs}ms due to prior 429`);
+      await page.waitForTimeout(waitMs);
+      continue;
+    }
+
+    if (now - lastAttemptTs < MIN_SUBMIT_INTERVAL_MS) {
+      await page.waitForTimeout(POLL_MS);
+      continue;
+    }
+
+    const count = await readInProgress(page);
+
+    if (count >= MAX_CONCURRENT) {
+      await page.waitForTimeout(POLL_MS);
+      continue;
+    }
+
+    const prompt = prompts[idx % prompts.length];
+    console.log(`In progress: ${count}/${MAX_CONCURRENT}`);
+    console.log("Submitting next prompt…");
+    const ok = await submitPrompt(page, prompt);
+    lastAttemptTs = Date.now();
+    console.log(`Submit result: ${ok ? "OK" : "NOT OK"}`);
+    if (ok) {
+      idx += 1;
+      // Give UI time to register submission before rechecking.
+      await page.waitForTimeout(2000);
+    } else {
+      // If not confirmed, don't hammer.
+      await page.waitForTimeout(Math.max(POLL_MS, 2000));
+    }
+  }
+})().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});
+
