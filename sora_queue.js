@@ -173,6 +173,11 @@ loadingOverlay:
   variationsButton: fromConfig("SORA_VARIATIONS_BUTTON") || "",
   variationsOption: fromConfig("SORA_VARIATIONS_OPTION") || "",
   modeChoice: fromConfig("SORA_MODE") || "",
+  // Alternate "drafts" UI (no activity counter): count in-progress tiles via spinner overlay.
+  draftsUrl: fromConfig("SORA_DRAFTS_URL") || "https://sora.chatgpt.com/drafts",
+  draftsInProgressSpinner:
+    fromConfig("SORA_DRAFTS_IN_PROGRESS") ||
+    "div.absolute.inset-0.grid.place-items-center",
 };
 
 // Queue of prompts to submit (add more if desired). The script will cycle
@@ -272,7 +277,19 @@ async function getSoraPage(browser) {
   return contexts[0]?.pages()[0];
 }
 
-async function readInProgress(page) {
+async function getOrCreateDraftsPage(browser, submitPage) {
+  const ctx = submitPage.context();
+  for (const p of ctx.pages()) {
+    if (p.url().toLowerCase().includes("/drafts")) return p;
+  }
+  const p = await ctx.newPage();
+  try {
+    await p.goto(selectors.draftsUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+  } catch {}
+  return p;
+}
+
+async function readInProgressFromActivityCounter(page) {
   // Prefer explicit counter if provided. Some pages can render multiple matching nodes;
   // we take the max numeric value found.
   if (selectors.inProgressCount) {
@@ -298,6 +315,49 @@ async function readInProgress(page) {
 
   // If nothing found, treat as 0 (UI often hides the counter when it's zero).
   return 0;
+}
+
+async function readInProgressFromDraftsSpinner(draftsPage) {
+  if (!selectors.draftsInProgressSpinner) return 0;
+  try {
+    // Each "in progress" tile shows a centered circular spinner overlay.
+    const n = await draftsPage.locator(selectors.draftsInProgressSpinner).count();
+    return Number.isFinite(n) ? Math.max(0, n) : 0;
+  } catch {
+    // If drafts tab was closed / navigated, be conservative: treat as full.
+    return MAX_CONCURRENT;
+  }
+}
+
+async function detectInProgressStrategy(browser, submitPage) {
+  // Strategy A (original): activity counter exists on this page.
+  if (selectors.inProgressCount) {
+    try {
+      const cnt = await submitPage.locator(selectors.inProgressCount).count();
+      if (cnt > 0) {
+        console.log("Detected in-progress strategy: activity counter");
+        return { mode: "activity", read: () => readInProgressFromActivityCounter(submitPage) };
+      }
+    } catch {}
+  }
+
+  // Strategy B (alternate): drafts page with per-tile spinner overlay.
+  const draftsPage = await getOrCreateDraftsPage(browser, submitPage);
+  console.log("Detected in-progress strategy: drafts spinner");
+  return {
+    mode: "drafts",
+    draftsPage,
+    read: async () => {
+      // Re-open drafts tab if it got closed.
+      let p = draftsPage;
+      try {
+        if (p.isClosed()) p = await getOrCreateDraftsPage(browser, submitPage);
+      } catch {
+        p = await getOrCreateDraftsPage(browser, submitPage);
+      }
+      return readInProgressFromDraftsSpinner(p);
+    },
+  };
 }
 
 async function isSubmitEnabled(page) {
@@ -562,6 +622,7 @@ async function submitPrompt(page, prompt) {
   const browser = await chromium.connectOverCDP(DEBUG_WS);
   const page = await getSoraPage(browser);
   if (!page) throw new Error("No Sora page found; open it in Arc first.");
+  const inProgressStrategy = await detectInProgressStrategy(browser, page);
 
   console.log("Connected. Maintaining queue…");
 
@@ -627,7 +688,7 @@ async function submitPrompt(page, prompt) {
       continue;
     }
 
-    const count = await readInProgress(page);
+    const count = await inProgressStrategy.read();
 
     if (count >= MAX_CONCURRENT) {
       await page.waitForTimeout(POLL_MS);
