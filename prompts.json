@@ -1,12 +1,263 @@
 [
-  {
-    "prompt": "Cinematic view from inside a quiet garage at golden hour, warm sunlight streaming through the open door casting long shadows across concrete floor, shelves with tools and boxes fading into darkness, suburban street visible outside, nostalgic moody atmosphere, strong contrast between warm light and cool shadows, visible dust in sunbeams, dreamy realism, shallow depth of field, heavy cinematic film grain, Kodak 580T tungsten film emulation, soft halation, subtle color bloom, vintage analog look, ultra-detailed, tranquil yet dramatic mood"
-  },
-  {
-    "prompt": "Anime-style cinematic scene of two children sitting on the roof of an old train car at sunset, overlooking long railway tracks stretching into distant hills, small town rooftops below, tall power poles and wires framing the scene, massive glowing orange clouds filling the sky, warm golden hour light casting long shadows, peaceful nostalgic mood, painterly anime realism, soft atmospheric haze, cinematic depth, subtle film grain, dreamy color grading, ultra-detailed, emotional storytelling composition"
-  },
-  {
-    "prompt": "Photorealistic product shot: AIHumaniser.pro on a laptop screen in a dim study, desk lamp warm bokeh, cool monitor glow, shallow depth of field, premium cinematic lighting, high contrast, subtle dust particles, film grain, 24fps film look feel (still), minimal modern composition, brand readable but natural"
-  }
-]
+    {
+      "style": "Mythic surreal cinema, 35mm film emulation, radiant halation, pearlescent bloom, fine grain, celestial color grade",
+      "scene": "A sacred shoreline where pastel pink and teal clouds form cathedral arches; a glowing ribbon of musical notes spirals like a halo; a bicycle crowned with pom-poms rests on wet sand; a vintage cassette altar glows; a lone figure faces a luminous sea; distant ship like a relic",
+      "cinematography": {
+        "camera": "Wide low-angle push-in toward the horizon",
+        "lens": "28mm wide",
+        "lighting": "Heavenly backlight through clouds, soft sand bounce",
+        "mood": "Awe, divine calm, lucid wonder"
+      },
+      "actions": ["Notes ascend like prayers", "Waves shimmer with light", "Clouds pulse softly"],
+      "background_sound": "Ocean hush, airy chimes, distant wind",
+      "negative": "No text, no watermark, no clutter"
+    },
+    {
+      "style": "Godly surreal fantasy, filmic grain, warm halation, pastel nebula grade",
+      "scene": "Cloud giants shaped like angels loom over a glowing beach; birds trace sigils through a ribbon of music; pom-poms sparkle like offerings; cassette player hums as a relic; lone figure stands in reverence",
+      "cinematography": {
+        "camera": "Static wide with slow zoom-in",
+        "lens": "35mm",
+        "lighting": "Radiant sky glow, soft rim on props",
+        "mood": "Reverent, mystical, serene"
+      },
+      "actions": ["Birds carve patterns", "Foam writes symbols", "Notes dissolve into light"],
+      "background_sound": "Surf with choir-like wind",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Surreal divine romance, 35mm look, halo bloom, soft vignette",
+      "scene": "A sea-temple of clouds where pink towers meet teal pillars; musical ribbon becomes a bridge to the sky; bicycle and cassette form a sacred still life; lone figure at the threshold",
+      "cinematography": {
+        "camera": "Wide crane up revealing cloud scale",
+        "lens": "24mm",
+        "lighting": "Golden celestial rays, cool ambient fill",
+        "mood": "Transcendent, hopeful"
+      },
+      "actions": ["Clouds open like gates", "Notes drift upward", "Waves glow"],
+      "background_sound": "Wind, surf, distant hum",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Dreamlike god-myth cinema, film grain, radiant pastel bloom",
+      "scene": "Heavenly shoreline with clouds shaped like colossal faces; music ribbon orbits like a crown; pom-poms glitter as holy sparks; ship hovers in haze",
+      "cinematography": {
+        "camera": "Wide orbit around foreground props",
+        "lens": "30mm",
+        "lighting": "Soft omnidirectional glow",
+        "mood": "Otherworldly, gentle awe"
+      },
+      "actions": ["Notes circle and fade", "Birds spiral", "Light ripples on sand"],
+      "background_sound": "Ethereal wind over waves",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Celestial surreal drama, 35mm emulation, warm halation, airy grain",
+      "scene": "A glowing beach beneath a sky of floating cloud islands; a ribbon of music stitches the heavens; bicycle and cassette stand as twin totems; lone figure centered",
+      "cinematography": {
+        "camera": "Slow dolly-in from sand level",
+        "lens": "32mm",
+        "lighting": "Sky glow with reflective sand bounce",
+        "mood": "Sacred calm, lucid dream"
+      },
+      "actions": ["Islands drift", "Notes unravel", "Foam mirrors clouds"],
+      "background_sound": "Surf with soft resonance",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Mythic pastel fantasy, filmic bloom, subtle gate weave",
+      "scene": "Clouds bloom like divine flowers; musical ribbon rains light; pom-poms scatter like blessings; cassette hums with warmth; lone figure listens",
+      "cinematography": {
+        "camera": "Wide static with gentle push",
+        "lens": "35mm",
+        "lighting": "Warm radiant key, cool sky fill",
+        "mood": "Tender reverence"
+      },
+      "actions": ["Light falls like petals", "Notes fade", "Waves glow"],
+      "background_sound": "Wind chimes over surf",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Surreal godlight cinema, 35mm look, halo bloom, fine grain",
+      "scene": "A radiant sea altar where clouds stack like thrones; music ribbon forms a halo path; bicycle crowned with color; cassette as glowing relic; distant ship in haze",
+      "cinematography": {
+        "camera": "Low-angle wide push",
+        "lens": "26mm",
+        "lighting": "Strong backlight with soft rays",
+        "mood": "Majestic, serene"
+      },
+      "actions": ["Rays pierce clouds", "Birds glide", "Notes evaporate"],
+      "background_sound": "Surf with airy resonance",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Divine dream realism, film grain, warm pastel glow",
+      "scene": "A sky-ocean where clouds reflect like mirrors; musical ribbon weaves constellations; pom-poms glow; lone figure at center",
+      "cinematography": {
+        "camera": "Wide lateral slide",
+        "lens": "34mm",
+        "lighting": "Soft omni glow",
+        "mood": "Peaceful, sacred"
+      },
+      "actions": ["Reflections ripple", "Notes shimmer", "Birds drift"],
+      "background_sound": "Quiet surf, soft wind",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Mythic pastel cinema, 35mm emulation, soft bloom",
+      "scene": "Clouds form colossal wings over the shore; a ribbon of music becomes a bridge of light; bicycle and cassette sit like offerings",
+      "cinematography": {
+        "camera": "Wide push toward horizon",
+        "lens": "28mm",
+        "lighting": "Golden halo with cool fill",
+        "mood": "Uplifting, holy calm"
+      },
+      "actions": ["Wings flex subtly", "Notes rise", "Waves glow"],
+      "background_sound": "Wind and surf harmony",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Celestial surreal romance, film grain, warm halation",
+      "scene": "A pastel heaven-sea where clouds bloom like temples; musical ribbon crowns the sky; lone figure bathed in glow",
+      "cinematography": {
+        "camera": "Static wide with slow zoom",
+        "lens": "35mm",
+        "lighting": "Radiant sky backlight",
+        "mood": "Tender awe"
+      },
+      "actions": ["Glow pulses", "Birds trace arcs", "Notes dissolve"],
+      "background_sound": "Soft surf, airy hum",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Surreal godscape cinema, 35mm look, pastel bloom",
+      "scene": "Cloud pillars rise like divine columns; music ribbon spirals upward; pom-poms sparkle as sacred dust; ship floats in haze",
+      "cinematography": {
+        "camera": "Low wide crane up",
+        "lens": "24mm",
+        "lighting": "Strong rim glow, soft fill",
+        "mood": "Epic, reverent"
+      },
+      "actions": ["Columns drift", "Notes ascend", "Waves mirror light"],
+      "background_sound": "Wind, surf, distant echo",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Dreamlike divine fantasy, film grain, warm pastel glow",
+      "scene": "A glowing shoreline under cloud halos; music ribbon forms a luminous arch; bicycle and cassette as twin relics",
+      "cinematography": {
+        "camera": "Wide dolly-in",
+        "lens": "30mm",
+        "lighting": "Halo backlight with sand bounce",
+        "mood": "Sacred tranquility"
+      },
+      "actions": ["Arch shimmers", "Notes fade", "Foam glows"],
+      "background_sound": "Gentle surf, airy wind",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Mythic surreal light-drama, 35mm emulation, soft bloom",
+      "scene": "Clouds like floating sanctuaries; music ribbon as glowing path; lone figure steps into light",
+      "cinematography": {
+        "camera": "Wide push centered on figure",
+        "lens": "32mm",
+        "lighting": "Radiant center glow",
+        "mood": "Hopeful, holy"
+      },
+      "actions": ["Path brightens", "Birds glide", "Notes vanish"],
+      "background_sound": "Surf with airy resonance",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Celestial pastel cinema, film grain, warm halation",
+      "scene": "A pastel sea of clouds where music becomes light; bicycle and cassette glow softly; distant ship like a star",
+      "cinematography": {
+        "camera": "Wide static with subtle parallax",
+        "lens": "35mm",
+        "lighting": "Soft omni glow",
+        "mood": "Quiet divinity"
+      },
+      "actions": ["Glow breathes", "Notes fade", "Waves shimmer"],
+      "background_sound": "Wind over surf",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Surreal godlight romance, 35mm look, pastel bloom",
+      "scene": "Clouds form a radiant dome over the shore; musical ribbon crowns the sky; lone figure bathed in halo",
+      "cinematography": {
+        "camera": "Wide dolly-in",
+        "lens": "28mm",
+        "lighting": "Strong backlight halo",
+        "mood": "Transcendent calm"
+      },
+      "actions": ["Dome glows", "Birds drift", "Notes dissolve"],
+      "background_sound": "Soft surf, airy hum",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Mythic surreal serenity, film grain, warm glow",
+      "scene": "Cloud thrones rise above a glowing sea; music ribbon floats like scripture; pom-poms sparkle",
+      "cinematography": {
+        "camera": "Wide crane up",
+        "lens": "24mm",
+        "lighting": "Radiant sky light",
+        "mood": "Majestic peace"
+      },
+      "actions": ["Thrones drift", "Notes fade", "Waves glow"],
+      "background_sound": "Wind and surf harmony",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Celestial dream cinema, 35mm emulation, pastel bloom",
+      "scene": "A luminous beach beneath cloud halos; musical ribbon arcs like a crown; bicycle and cassette as glowing offerings",
+      "cinematography": {
+        "camera": "Wide push-in",
+        "lens": "30mm",
+        "lighting": "Halo backlight with soft fill",
+        "mood": "Sacred wonder"
+      },
+      "actions": ["Halo pulses", "Birds glide", "Notes fade"],
+      "background_sound": "Surf with airy resonance",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Surreal divine pastel fantasy, film grain, warm halation",
+      "scene": "Clouds shaped like radiant gates over the sea; musical ribbon opens a path of light; lone figure at the threshold",
+      "cinematography": {
+        "camera": "Wide centered push",
+        "lens": "32mm",
+        "lighting": "Gate glow with reflective sand bounce",
+        "mood": "Holy anticipation"
+      },
+      "actions": ["Gates glow", "Notes ascend", "Waves shimmer"],
+      "background_sound": "Wind, surf, distant echo",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Mythic pastel romance, 35mm look, soft bloom",
+      "scene": "A glowing shore where clouds bloom like altars; music ribbon drifts like incense; pom-poms glow softly",
+      "cinematography": {
+        "camera": "Wide static with slow zoom",
+        "lens": "35mm",
+        "lighting": "Warm halo with cool fill",
+        "mood": "Tender reverence"
+      },
+      "actions": ["Glow breathes", "Notes dissolve", "Foam glitters"],
+      "background_sound": "Soft surf, airy wind",
+      "negative": "No text, no watermark"
+    },
+    {
+      "style": "Celestial surreal finale, 35mm emulation, radiant pastel bloom",
+      "scene": "A heaven-sea where clouds crown the horizon; musical ribbon becomes pure light; bicycle and cassette glow as sacred relics; lone figure stands in awe",
+      "cinematography": {
+        "camera": "Wide dolly-in toward the glowing horizon",
+        "lens": "28mm",
+        "lighting": "Intense radiant backlight with soft halo",
+        "mood": "Transcendent, divine closure"
+      },
+      "actions": ["Light floods scene", "Notes vanish into glow", "Waves shimmer endlessly"],
+      "background_sound": "Ocean hush, celestial wind",
+      "negative": "No text, no watermark"
+    }
+  ]
   
