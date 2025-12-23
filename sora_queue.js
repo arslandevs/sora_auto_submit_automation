@@ -471,11 +471,11 @@ async function isSubmitEnabled(page) {
 
 async function applyChoice(page, label) {
   if (!label) return;
-  // If the choice label is already visible in the toolbar, don't click it (clicking
-  // often opens a dropdown and can block submission).
+  // Legacy behavior was "no-op" (we don't reliably automate these in old UI).
+  // Crucially: do NOT log as an error-like message; it causes noise/confusion.
   const already = await page.locator(`button:has-text("${label}")`).count();
   if (already > 0) return;
-  console.log(`Choice "${label}" not found in toolbar; skipping auto-select.`);
+  // Keep silent when not found.
 }
 
 async function applyVariationsChoice(page, label) {
@@ -713,6 +713,15 @@ async function submitPrompt(page, prompt) {
   // Close any popovers/dropdowns that might have opened.
   try {
     await page.keyboard.press("Escape");
+  } catch {}
+
+  // Some Sora pages disable the submit button until the composer is focused/blurred once.
+  // A small nudge helps avoid "Submit still disabled" loops.
+  try {
+    await page.keyboard.press("Tab");
+    await page.waitForTimeout(150);
+    await page.keyboard.press("Shift+Tab");
+    await page.waitForTimeout(150);
   } catch {}
 
   // Try to get the submit button enabled: small loop to press Enter if needed.
