@@ -116,6 +116,14 @@ const AFTER_SUBMIT_WAIT_MS = clamp(
   60000
 );
 
+// Drafts spinner in-progress detection can undercount (e.g., virtualization / not all tiles show spinners).
+// This margin is added to the spinner count and capped at MAX_CONCURRENT to prevent oversubmitting.
+const DRAFTS_SPINNER_SAFETY_MARGIN = clamp(
+  getNumber("DRAFTS_SPINNER_SAFETY_MARGIN", 1),
+  0,
+  3
+);
+
 // Prompt parsing:
 // - "full": if an item is an object, stringify the entire object and submit it.
 // - "prompt": if an item is an object with {prompt: string}, submit only that field.
@@ -337,7 +345,8 @@ async function readInProgressFromDraftsSpinner(draftsPage) {
   try {
     // Each "in progress" tile shows a centered circular spinner overlay.
     const n = await draftsPage.locator(selectors.draftsInProgressSpinner).count();
-    return Number.isFinite(n) ? Math.max(0, n) : 0;
+    const base = Number.isFinite(n) ? Math.max(0, n) : 0;
+    return Math.min(MAX_CONCURRENT, base + DRAFTS_SPINNER_SAFETY_MARGIN);
   } catch {
     // If drafts tab was closed / navigated, be conservative: treat as full.
     return MAX_CONCURRENT;
@@ -453,7 +462,9 @@ const inferOrientation = (explicitOrientation, aspect) => {
 
 async function openSettingsMenu(page) {
   const menu = page.locator(selectors.settingsMenu).first();
-  if (await menu.count()) return true;
+  try {
+    if (await menu.isVisible()) return true;
+  } catch {}
 
   // Strategy 1: user-provided selector.
   if (selectors.settingsTrigger) {
@@ -464,16 +475,28 @@ async function openSettingsMenu(page) {
     } catch {}
   }
 
-  // Strategy 2: click a likely radix menu trigger button.
-  // This targets small icon buttons that control menus.
-  const candidates = page.locator("button[aria-haspopup='menu'], button[aria-expanded]").filter({
-    has: page.locator("svg"),
-  });
+  // Strategy 2: auto-detect the trigger, but ONLY inside the composer area
+  // (avoid sidebar buttons like Explore/Profile/etc).
+  const composer = page
+    .locator(selectors.promptTextarea)
+    .first()
+    .locator(
+      "xpath=ancestor-or-self::*[.//span[contains(@class,'sr-only') and (contains(.,'Create video') or contains(.,'Create image') or contains(.,'Generate'))]][1]"
+    );
+
+  const candidates = composer
+    .locator("button[aria-haspopup='menu'], button[aria-expanded]")
+    .filter({ has: composer.locator("svg") });
 
   const n = await candidates.count();
   for (let i = 0; i < Math.min(n, 8); i++) {
     const btn = candidates.nth(i);
     try {
+      // Skip disabled buttons.
+      const disabled =
+        (await btn.getAttribute("disabled")) !== null ||
+        (await btn.getAttribute("data-disabled")) === "true";
+      if (disabled) continue;
       await btn.click({ timeout: 1000, force: true });
       await menu.waitFor({ state: "visible", timeout: 1000 });
       return true;
