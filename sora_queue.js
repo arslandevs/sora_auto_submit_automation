@@ -72,7 +72,8 @@ const MIN_SUBMIT_INTERVAL_MS = clamp(
 // Cooldown after 429 or similar errors.
 const BACKOFF_429_MS = clamp(getNumber("BACKOFF_429_MS", 60000), 1000, 300000);
 
-// Optional cap on total successful submissions before exiting.
+// How many times to run the entire prompts file. Example: 10 prompts + MAX_SUBMITS=2 => 20 total submits.
+// null => run forever.
 const MAX_SUBMITS = getNumber("MAX_SUBMITS", null);
 
 // Logging
@@ -143,6 +144,8 @@ loadingOverlay:
   resolutionChoice: fromConfig("SORA_RESOLUTION") || "",
   durationChoice: fromConfig("SORA_DURATION") || "",
   variationsChoice: fromConfig("SORA_VARIATIONS") || "",
+  variationsButton: fromConfig("SORA_VARIATIONS_BUTTON") || "",
+  variationsOption: fromConfig("SORA_VARIATIONS_OPTION") || "",
   modeChoice: fromConfig("SORA_MODE") || "",
 };
 
@@ -188,6 +191,17 @@ A) “Her words sounded fake. Every detector screamed AI. One search, one click�
 B) “Stuck with an AI-sounding essay? Detectors flashing red? Paste it into AI Humaniser… and watch it become warm, natural, human. AIHumaniser.pro is the way to go.”`,
 ];
 
+const normalizePromptItem = (item) => {
+  if (item === null || item === undefined) return null;
+  if (typeof item === "string") return item;
+  if (typeof item === "object") {
+    if (typeof item.prompt === "string") return item.prompt;
+    // fallback: stringify whole object
+    return JSON.stringify(item, null, 2);
+  }
+  return String(item);
+};
+
 const loadPrompts = () => {
   if (fs.existsSync(PROMPTS_FILE)) {
     try {
@@ -200,15 +214,15 @@ const loadPrompts = () => {
           );
           return DEFAULT_PROMPTS;
         }
-        // Normalize array items to strings.
-        return parsed.map((item) =>
-          typeof item === "string" ? item : JSON.stringify(item, null, 2)
-        );
+        const out = parsed.map(normalizePromptItem).filter(Boolean);
+        return out.length ? out : DEFAULT_PROMPTS;
       }
       // If a single object/string is provided, wrap it.
       if (typeof parsed === "string") return [parsed];
-      if (parsed && typeof parsed === "object")
-        return [JSON.stringify(parsed, null, 2)];
+      if (parsed && typeof parsed === "object") {
+        const one = normalizePromptItem(parsed);
+        return one ? [one] : DEFAULT_PROMPTS;
+      }
 
       console.warn(`Prompts file ${PROMPTS_FILE} not usable; using defaults`);
     } catch (err) {
@@ -285,6 +299,40 @@ async function applyChoice(page, label) {
   console.log(`Choice "${label}" not found in toolbar; skipping auto-select.`);
 }
 
+async function applyVariationsChoice(page, label) {
+  if (!label) return;
+  // If already set, skip.
+  const existing = await page.locator(`button:has-text("${label}")`).count();
+  if (existing > 0) return;
+
+  // Try to open the variations dropdown.
+  const buttonSelector = selectors.variationsButton || `button:has-text("${label}")`;
+  const btn = page.locator(buttonSelector).first();
+  try {
+    await btn.click({ timeout: VISIBLE_TIMEOUT_MS, force: true });
+  } catch (err) {
+    console.log(`Variations button not clickable (${buttonSelector}): ${err.message}`);
+    return;
+  }
+
+  // Try to pick the desired option.
+  const optionSelector =
+    selectors.variationsOption || `[role="option"]:has-text("${label}")`;
+  const opt = page.locator(optionSelector).filter({ hasText: label }).first();
+  try {
+    await opt.click({ timeout: VISIBLE_TIMEOUT_MS, force: true });
+    return;
+  } catch (err) {
+    console.log(`Variations option not clickable (${optionSelector}): ${err.message}`);
+  }
+
+  // If still not set, try sending Enter after typing the label.
+  try {
+    await page.keyboard.insertText(label);
+    await page.keyboard.press("Enter");
+  } catch {}
+}
+
 const isGenEndpoint = (url) =>
   (url.includes("backend/") &&
     (url.includes("video_gen") || url.includes("image_gen") || url.includes("gen")));
@@ -347,7 +395,7 @@ async function submitPrompt(page, prompt) {
   await page.waitForTimeout(300);
   await applyChoice(page, selectors.durationChoice);
   await page.waitForTimeout(300);
-  await applyChoice(page, selectors.variationsChoice);
+  await applyVariationsChoice(page, selectors.variationsChoice);
   await page.waitForTimeout(500);
 
   // Close any popovers/dropdowns that might have opened.
@@ -515,6 +563,8 @@ async function submitPrompt(page, prompt) {
   let submitCount = 0;
   const prompts = loadPrompts(); // initial load
   let promptsMtime = null;
+  let cycle = 0;
+  let promptIndex = 0;
 
   while (true) {
     const now = Date.now();
@@ -530,6 +580,8 @@ async function submitPrompt(page, prompt) {
           prompts.splice(0, prompts.length, ...fresh);
           promptsMtime = mtime;
           console.log("Prompts reloaded from file.");
+          // Keep indices in range after reload.
+          promptIndex = promptIndex % Math.max(prompts.length, 1);
         }
       }
     } catch {}
@@ -552,23 +604,36 @@ async function submitPrompt(page, prompt) {
       continue;
     }
 
-    const prompt = prompts[idx % prompts.length];
-    console.log(`In progress: ${count}/${MAX_CONCURRENT}`);
+    if (!prompts.length) {
+      console.log("No prompts loaded; waiting…");
+      await page.waitForTimeout(POLL_MS);
+      continue;
+    }
+
+    // Stop condition: after MAX_SUBMITS full passes through the prompts list.
+    if (MAX_SUBMITS !== null && cycle >= MAX_SUBMITS) {
+      console.log(`Reached MAX_SUBMITS=${MAX_SUBMITS} cycles. Exiting.`);
+      break;
+    }
+
+    const prompt = prompts[promptIndex];
+    console.log(
+      `In progress: ${count}/${MAX_CONCURRENT} | prompt ${promptIndex + 1}/${prompts.length} | cycle ${cycle + 1}/${MAX_SUBMITS ?? "∞"}`
+    );
     console.log("Submitting next prompt…");
     const ok = await submitPrompt(page, prompt);
     lastAttemptTs = Date.now();
     console.log(`Submit result: ${ok ? "OK" : "NOT OK"}`);
     if (ok) {
-      idx += 1;
       submitCount += 1;
+      promptIndex += 1;
+      if (promptIndex >= prompts.length) {
+        promptIndex = 0;
+        cycle += 1;
+        console.log(`Completed a full prompts pass. cycle=${cycle}`);
+      }
       // Give UI time to register submission before rechecking.
       if (AFTER_SUBMIT_WAIT_MS) await page.waitForTimeout(AFTER_SUBMIT_WAIT_MS);
-      if (MAX_SUBMITS && submitCount >= MAX_SUBMITS) {
-        console.log(
-          `Reached MAX_SUBMITS=${MAX_SUBMITS}. Stopping automation loop.`
-        );
-        break;
-      }
     } else {
       // If not confirmed, don't hammer.
       await page.waitForTimeout(Math.max(POLL_MS, 2000));
