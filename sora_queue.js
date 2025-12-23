@@ -138,6 +138,15 @@ const log = (...args) => {
 };
 console.log = log;
 
+const renderProgressBar = (current, total, width = 20) => {
+  if (!total || !Number.isFinite(total)) {
+    return `[${"".padEnd(width, ".")}]`;
+  }
+  const ratio = Math.max(0, Math.min(1, current / total));
+  const filled = Math.round(ratio * width);
+  return `[${"#".repeat(filled).padEnd(width, ".")}]`;
+};
+
 // CSS selectors for Sora UI. Update these to real selectors from the page.
 const selectors = {
   // Element that displays "X/3" or similar for in-progress jobs. If unavailable,
@@ -582,6 +591,10 @@ async function submitPrompt(page, prompt) {
   let promptsMtime = null;
   let cycle = 0;
   let promptIndex = 0;
+  const totalPlannedSubmits =
+    PROMPT_FILE_RUNS !== null && prompts.length
+      ? prompts.length * PROMPT_FILE_RUNS
+      : null;
 
   while (true) {
     const now = Date.now();
@@ -634,8 +647,12 @@ async function submitPrompt(page, prompt) {
     }
 
     const prompt = prompts[promptIndex];
+    const progressBar = renderProgressBar(
+      submitCount,
+      totalPlannedSubmits ?? undefined
+    );
     console.log(
-      `In progress: ${count}/${MAX_CONCURRENT} | prompt ${promptIndex + 1}/${prompts.length} | run ${cycle + 1}/${PROMPT_FILE_RUNS ?? "∞"}`
+      `${progressBar} In progress: ${count}/${MAX_CONCURRENT} | prompt ${promptIndex + 1}/${prompts.length} | run ${cycle + 1}/${PROMPT_FILE_RUNS ?? "∞"} | submitted ${submitCount}/${totalPlannedSubmits ?? "∞"}`
     );
     console.log("Submitting next prompt…");
     const ok = await submitPrompt(page, prompt);
