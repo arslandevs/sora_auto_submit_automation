@@ -648,6 +648,12 @@ async function submitPrompt(page, prompt) {
         promptIndex = 0;
         cycle += 1;
         console.log(`Completed a full prompts pass. cycle=${cycle}`);
+        // If we just completed the final configured run, exit immediately (don't wait
+        // for the in-progress counter to drop).
+        if (PROMPT_FILE_RUNS !== null && cycle >= PROMPT_FILE_RUNS) {
+          console.log(`Reached PROMPT_FILE_RUNS=${PROMPT_FILE_RUNS}. Exiting.`);
+          break;
+        }
       }
       // Give UI time to register submission before rechecking.
       if (AFTER_SUBMIT_WAIT_MS) await page.waitForTimeout(AFTER_SUBMIT_WAIT_MS);
