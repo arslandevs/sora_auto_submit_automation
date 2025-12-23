@@ -476,6 +476,57 @@ async function isSubmitEnabled(page) {
   return false;
 }
 
+const normalizeMode = (s) => (s || "").toString().trim().toLowerCase();
+
+async function ensureModeOldUI(page) {
+  const desired = normalizeMode(selectors.modeChoice);
+  if (desired !== "image" && desired !== "video") return;
+
+  // Scope to composer region to avoid sidebar clicks.
+  const composer = page
+    .locator(selectors.promptTextarea)
+    .first()
+    .locator(
+      "xpath=ancestor-or-self::*[.//span[contains(@class,'sr-only') and (contains(.,'Create video') or contains(.,'Create image') or contains(.,'Generate'))]][1]"
+    );
+
+  const desiredLabel = desired === "image" ? "Image" : "Video";
+  const otherLabel = desired === "image" ? "Video" : "Image";
+
+  // If desired label is already shown as selected in the composer, do nothing.
+  // Heuristic: a selected pill tends to have higher opacity / inverse bg; we just check presence of label.
+  const desiredBtn = composer.locator(`button:has-text("${desiredLabel}")`).first();
+  const otherBtn = composer.locator(`button:has-text("${otherLabel}")`).first();
+
+  try {
+    if ((await desiredBtn.count()) > 0) {
+      // If the other is disabled and desired exists, assume correct.
+      // Otherwise, try clicking desired to force selection.
+      await desiredBtn.click({ timeout: 1000, force: true }).catch(() => {});
+      return;
+    }
+  } catch {}
+
+  // Fallback: try anywhere on page, still preferring buttons (not sidebar links).
+  const global = page.locator(`button:has-text("${desiredLabel}")`).first();
+  await global.click({ timeout: 1500, force: true }).catch(() => {});
+}
+
+function preferredSubmitSelectors() {
+  const raw = selectors.submitButton.split(",").map((s) => s.trim()).filter(Boolean);
+  const desired = normalizeMode(selectors.modeChoice);
+  const want = desired === "image" ? "Create image" : desired === "video" ? "Create video" : null;
+  if (!want) return raw;
+
+  const preferred = [];
+  const rest = [];
+  for (const sel of raw) {
+    if (sel.includes(want)) preferred.push(sel);
+    else rest.push(sel);
+  }
+  return preferred.concat(rest);
+}
+
 async function applyChoice(page, label) {
   if (!label) return;
   // Legacy behavior was "no-op" (we don't reliably automate these in old UI).
@@ -683,6 +734,12 @@ async function submitPrompt(page, prompt) {
     await page.waitForTimeout(200);
   } catch {}
   
+  // Ensure mode is correct (old UI only). This prevents "SORA_MODE=Image" but still submitting video.
+  if (SORA_UI_MODE !== "new") {
+    await ensureModeOldUI(page);
+    await page.waitForTimeout(200);
+  }
+
   // Apply settings based on Sora UI mode (keep old/new isolated).
   if (SORA_UI_MODE === "new") {
     await applyNewFormatVideoSettings(page);
@@ -751,7 +808,7 @@ async function submitPrompt(page, prompt) {
   const reqPromise = waitForGenRequest(page, GEN_REQUEST_TIMEOUT_MS);
 
   // Try multiple selector strategies
-  const submitSelectors = selectors.submitButton.split(',').map(s => s.trim());
+  const submitSelectors = preferredSubmitSelectors();
   let clicked = false;
   
   for (const selector of submitSelectors) {
