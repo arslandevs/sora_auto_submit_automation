@@ -1245,26 +1245,20 @@ async function connectOverCDPWithRetry(debugWs) {
     );
     console.log("Submitting next prompt…");
     
-    // Navigate to home/composer page for submission (if not already there)
-    if (!page.url().includes("sora.chatgpt.com") || page.url().includes("/drafts")) {
-      try {
-        await page.goto("https://sora.chatgpt.com/", { waitUntil: "domcontentloaded", timeout: 10000 });
-        await page.waitForTimeout(1000);
-      } catch (err) {
-        console.log("Failed to navigate to composer:", err.message);
-      }
-    }
-    
+    // Stay on drafts page - submit directly from here
     const ok = await submitPrompt(page, prompt);
     lastAttemptTs = Date.now();
     console.log(`Submit result: ${ok ? "OK" : "NOT OK"}`);
     
-    // Navigate back to drafts page for in-progress checking
-    try {
-      await page.goto(selectors.draftsUrl, { waitUntil: "domcontentloaded", timeout: 10000 });
-      await page.waitForTimeout(1000);
-    } catch (err) {
-      console.log("Failed to return to drafts page:", err.message);
+    // Ensure we stay on drafts page
+    if (!page.url().includes("/drafts")) {
+      try {
+        console.log("Returning to drafts page...");
+        await page.goto(selectors.draftsUrl, { waitUntil: "domcontentloaded", timeout: 10000 });
+        await page.waitForTimeout(1000);
+      } catch (err) {
+        console.log("Failed to return to drafts page:", err.message);
+      }
     }
     
     if (ok) {
