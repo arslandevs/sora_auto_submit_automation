@@ -953,14 +953,15 @@ async function runPreflightTests(browser, page, inProgressStrategy) {
     allPassed &= logTest("Sora page accessible", false, err.message);
   }
 
-  // Test 3: Drafts page navigation
+  // Test 3: Verify on drafts page (NO NAVIGATION)
   try {
-    await page.goto(selectors.draftsUrl, { waitUntil: "domcontentloaded", timeout: 10000 });
-    await page.waitForTimeout(1000);
     const onDrafts = page.url().includes("/drafts");
-    allPassed &= logTest("Drafts page navigation", onDrafts, page.url());
+    allPassed &= logTest("Already on drafts page", onDrafts, page.url());
+    if (!onDrafts) {
+      console.log("⚠️  WARNING: Please open https://sora.chatgpt.com/drafts in Arc before running");
+    }
   } catch (err) {
-    allPassed &= logTest("Drafts page navigation", false, err.message);
+    allPassed &= logTest("Already on drafts page", false, err.message);
   }
 
   // Test 4: In-progress detection
@@ -972,20 +973,7 @@ async function runPreflightTests(browser, page, inProgressStrategy) {
     allPassed &= logTest("In-progress detection", false, err.message);
   }
 
-  // Test 5: Stay on drafts page (user preference)
-  try {
-    // Ensure we're on the drafts page for submission workflow
-    if (!page.url().includes("/drafts")) {
-      await page.goto(selectors.draftsUrl, { waitUntil: "domcontentloaded", timeout: 10000 });
-      await page.waitForTimeout(1000);
-    }
-    const onDrafts = page.url().includes("/drafts");
-    allPassed &= logTest("On drafts page for workflow", onDrafts, page.url());
-  } catch (err) {
-    allPassed &= logTest("On drafts page for workflow", false, err.message);
-  }
-
-  // Test 6: Prompt textarea accessible
+  // Test 5: Prompt textarea accessible
   try {
     // Wait for textarea to appear (it may load dynamically)
     const textarea = page.locator(selectors.promptTextarea).first();
@@ -997,7 +985,7 @@ async function runPreflightTests(browser, page, inProgressStrategy) {
     allPassed &= logTest("Prompt textarea found", false, err.message);
   }
 
-  // Test 7: Fill test prompt
+  // Test 6: Fill test prompt
   let testPrompt = "Test prompt for validation";
   try {
     const prompts = loadPrompts();
@@ -1018,7 +1006,7 @@ async function runPreflightTests(browser, page, inProgressStrategy) {
     allPassed &= logTest("Fill prompt textarea", false, err.message);
   }
 
-  // Test 8: Submit button detection
+  // Test 7: Submit button detection
   try {
     const submitSelectors = selectors.submitButton.split(',').map(s => s.trim());
     let found = false;
@@ -1036,7 +1024,7 @@ async function runPreflightTests(browser, page, inProgressStrategy) {
     allPassed &= logTest("Submit button found", false, err.message);
   }
 
-  // Test 9: Submit button state
+  // Test 8: Submit button state
   try {
     const enabled = await isSubmitEnabled(page);
     // Note: button might be disabled if no actual prompt, but we can detect it
@@ -1045,7 +1033,7 @@ async function runPreflightTests(browser, page, inProgressStrategy) {
     allPassed &= logTest("Submit button state check", false, err.message);
   }
 
-  // Test 10: UI mode detection
+  // Test 9: UI mode detection
   try {
     const mode = inProgressStrategy.mode || "unknown";
     const valid = mode === "activity" || mode === "drafts";
@@ -1054,7 +1042,7 @@ async function runPreflightTests(browser, page, inProgressStrategy) {
     allPassed &= logTest("UI mode detection", false, err.message);
   }
 
-  // Test 11: Prompts file loaded
+  // Test 10: Prompts file loaded
   try {
     const prompts = loadPrompts();
     const loaded = prompts.length > 0;
@@ -1063,7 +1051,7 @@ async function runPreflightTests(browser, page, inProgressStrategy) {
     allPassed &= logTest("Prompts file loaded", false, err.message);
   }
 
-  // Test 12: Log file writable
+  // Test 11: Log file writable
   try {
     if (LOG_FILE) {
       const testMsg = `[TEST] ${new Date().toISOString()} Pre-flight test completed\n`;
@@ -1245,21 +1233,13 @@ async function connectOverCDPWithRetry(debugWs) {
     );
     console.log("Submitting next prompt…");
     
-    // Stay on drafts page - submit directly from here
+    // Stay on drafts page - submit directly from here (NO NAVIGATION)
     const ok = await submitPrompt(page, prompt);
     lastAttemptTs = Date.now();
     console.log(`Submit result: ${ok ? "OK" : "NOT OK"}`);
     
-    // Ensure we stay on drafts page
-    if (!page.url().includes("/drafts")) {
-      try {
-        console.log("Returning to drafts page...");
-        await page.goto(selectors.draftsUrl, { waitUntil: "domcontentloaded", timeout: 10000 });
-        await page.waitForTimeout(1000);
-      } catch (err) {
-        console.log("Failed to return to drafts page:", err.message);
-      }
-    }
+    // Small wait to let UI update
+    await page.waitForTimeout(500);
     
     if (ok) {
       submitCount += 1;
