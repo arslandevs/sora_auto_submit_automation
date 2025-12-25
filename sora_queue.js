@@ -972,14 +972,17 @@ async function runPreflightTests(browser, page, inProgressStrategy) {
     allPassed &= logTest("In-progress detection", false, err.message);
   }
 
-  // Test 5: Navigate back to Sora composer
+  // Test 5: Stay on drafts page (user preference)
   try {
-    await page.goto("https://sora.chatgpt.com/", { waitUntil: "domcontentloaded", timeout: 10000 });
-    await page.waitForTimeout(1000);
-    const onSora = page.url().includes("sora.chatgpt.com");
-    allPassed &= logTest("Sora composer page", onSora, page.url());
+    // Ensure we're on the drafts page for submission workflow
+    if (!page.url().includes("/drafts")) {
+      await page.goto(selectors.draftsUrl, { waitUntil: "domcontentloaded", timeout: 10000 });
+      await page.waitForTimeout(1000);
+    }
+    const onDrafts = page.url().includes("/drafts");
+    allPassed &= logTest("On drafts page for workflow", onDrafts, page.url());
   } catch (err) {
-    allPassed &= logTest("Sora composer page", false, err.message);
+    allPassed &= logTest("On drafts page for workflow", false, err.message);
   }
 
   // Test 6: Prompt textarea accessible
@@ -1241,9 +1244,29 @@ async function connectOverCDPWithRetry(debugWs) {
       `${progressBar} In progress: ${count}/${MAX_CONCURRENT} | prompt ${promptIndex + 1}/${prompts.length} | run ${cycle + 1}/${PROMPT_FILE_RUNS ?? "∞"} | submitted ${submitCount}/${totalPlannedSubmits ?? "∞"}`
     );
     console.log("Submitting next prompt…");
+    
+    // Navigate to home/composer page for submission (if not already there)
+    if (!page.url().includes("sora.chatgpt.com") || page.url().includes("/drafts")) {
+      try {
+        await page.goto("https://sora.chatgpt.com/", { waitUntil: "domcontentloaded", timeout: 10000 });
+        await page.waitForTimeout(1000);
+      } catch (err) {
+        console.log("Failed to navigate to composer:", err.message);
+      }
+    }
+    
     const ok = await submitPrompt(page, prompt);
     lastAttemptTs = Date.now();
     console.log(`Submit result: ${ok ? "OK" : "NOT OK"}`);
+    
+    // Navigate back to drafts page for in-progress checking
+    try {
+      await page.goto(selectors.draftsUrl, { waitUntil: "domcontentloaded", timeout: 10000 });
+      await page.waitForTimeout(1000);
+    } catch (err) {
+      console.log("Failed to return to drafts page:", err.message);
+    }
+    
     if (ok) {
       submitCount += 1;
       promptIndex += 1;
