@@ -914,6 +914,189 @@ async function submitPrompt(page, prompt) {
   return res.status() === 200;
 }
 
+// --- PRE-FLIGHT TESTS -------------------------------------------------------
+
+async function runPreflightTests(browser, page, inProgressStrategy) {
+  const testResults = [];
+  const testLog = [];
+  
+  const logTest = (name, passed, details = "") => {
+    const mark = passed ? "✓" : "✗";
+    const status = passed ? "PASS" : "FAIL";
+    const msg = `${mark} ${name}: ${status}${details ? " - " + details : ""}`;
+    console.log(msg);
+    testLog.push(msg);
+    testResults.push({ name, passed, details });
+    return passed;
+  };
+
+  console.log("\n========================================");
+  console.log("PRE-FLIGHT TEST SUITE");
+  console.log("========================================\n");
+
+  let allPassed = true;
+
+  // Test 1: CDP connection
+  try {
+    const contexts = browser.contexts();
+    allPassed &= logTest("CDP connection", contexts.length > 0, `${contexts.length} context(s)`);
+  } catch (err) {
+    allPassed &= logTest("CDP connection", false, err.message);
+  }
+
+  // Test 2: Sora page accessible
+  try {
+    const url = page.url();
+    const isSora = url.includes("sora.chatgpt.com");
+    allPassed &= logTest("Sora page accessible", isSora, url);
+  } catch (err) {
+    allPassed &= logTest("Sora page accessible", false, err.message);
+  }
+
+  // Test 3: Drafts page navigation
+  try {
+    await page.goto(selectors.draftsUrl, { waitUntil: "domcontentloaded", timeout: 10000 });
+    await page.waitForTimeout(1000);
+    const onDrafts = page.url().includes("/drafts");
+    allPassed &= logTest("Drafts page navigation", onDrafts, page.url());
+  } catch (err) {
+    allPassed &= logTest("Drafts page navigation", false, err.message);
+  }
+
+  // Test 4: In-progress detection
+  try {
+    const count = await inProgressStrategy.read();
+    const valid = Number.isFinite(count) && count >= 0 && count <= MAX_CONCURRENT;
+    allPassed &= logTest("In-progress detection", valid, `count=${count}/${MAX_CONCURRENT}`);
+  } catch (err) {
+    allPassed &= logTest("In-progress detection", false, err.message);
+  }
+
+  // Test 5: Navigate back to Sora composer
+  try {
+    await page.goto("https://sora.chatgpt.com/", { waitUntil: "domcontentloaded", timeout: 10000 });
+    await page.waitForTimeout(1000);
+    const onSora = page.url().includes("sora.chatgpt.com");
+    allPassed &= logTest("Sora composer page", onSora, page.url());
+  } catch (err) {
+    allPassed &= logTest("Sora composer page", false, err.message);
+  }
+
+  // Test 6: Prompt textarea accessible
+  try {
+    // Wait for textarea to appear (it may load dynamically)
+    const textarea = page.locator(selectors.promptTextarea).first();
+    await textarea.waitFor({ state: "attached", timeout: 5000 }).catch(() => {});
+    const count = await textarea.count();
+    const found = count > 0;
+    allPassed &= logTest("Prompt textarea found", found, `${count} element(s)`);
+  } catch (err) {
+    allPassed &= logTest("Prompt textarea found", false, err.message);
+  }
+
+  // Test 7: Fill test prompt
+  let testPrompt = "Test prompt for validation";
+  try {
+    const prompts = loadPrompts();
+    if (prompts.length > 0) {
+      testPrompt = typeof prompts[0] === "string" ? prompts[0] : JSON.stringify(prompts[0]);
+      testPrompt = testPrompt.substring(0, 100); // Use first 100 chars for test
+    }
+  } catch {}
+
+  try {
+    await page.fill(selectors.promptTextarea, "", { timeout: 5000 });
+    await page.fill(selectors.promptTextarea, testPrompt, { timeout: 5000 });
+    await page.waitForTimeout(500);
+    const value = await page.inputValue(selectors.promptTextarea).catch(() => "");
+    const filled = value.length > 0;
+    allPassed &= logTest("Fill prompt textarea", filled, `${value.length} chars`);
+  } catch (err) {
+    allPassed &= logTest("Fill prompt textarea", false, err.message);
+  }
+
+  // Test 8: Submit button detection
+  try {
+    const submitSelectors = selectors.submitButton.split(',').map(s => s.trim());
+    let found = false;
+    let foundSelector = "";
+    for (const sel of submitSelectors) {
+      const btn = await page.$(sel);
+      if (btn) {
+        found = true;
+        foundSelector = sel.substring(0, 50);
+        break;
+      }
+    }
+    allPassed &= logTest("Submit button found", found, foundSelector);
+  } catch (err) {
+    allPassed &= logTest("Submit button found", false, err.message);
+  }
+
+  // Test 9: Submit button state
+  try {
+    const enabled = await isSubmitEnabled(page);
+    // Note: button might be disabled if no actual prompt, but we can detect it
+    logTest("Submit button state check", true, enabled ? "enabled" : "disabled");
+  } catch (err) {
+    allPassed &= logTest("Submit button state check", false, err.message);
+  }
+
+  // Test 10: UI mode detection
+  try {
+    const mode = inProgressStrategy.mode || "unknown";
+    const valid = mode === "activity" || mode === "drafts";
+    allPassed &= logTest("UI mode detection", valid, `mode=${mode}`);
+  } catch (err) {
+    allPassed &= logTest("UI mode detection", false, err.message);
+  }
+
+  // Test 11: Prompts file loaded
+  try {
+    const prompts = loadPrompts();
+    const loaded = prompts.length > 0;
+    allPassed &= logTest("Prompts file loaded", loaded, `${prompts.length} prompt(s)`);
+  } catch (err) {
+    allPassed &= logTest("Prompts file loaded", false, err.message);
+  }
+
+  // Test 12: Log file writable
+  try {
+    if (LOG_FILE) {
+      const testMsg = `[TEST] ${new Date().toISOString()} Pre-flight test completed\n`;
+      if (logStream) {
+        logStream.write(testMsg);
+        allPassed &= logTest("Log file writable", true, LOG_FILE);
+      } else {
+        allPassed &= logTest("Log file writable", false, "No log stream");
+      }
+    } else {
+      logTest("Log file writable", true, "Logging disabled");
+    }
+  } catch (err) {
+    allPassed &= logTest("Log file writable", false, err.message);
+  }
+
+  console.log("\n========================================");
+  if (allPassed) {
+    console.log("✓ ALL TESTS PASSED - Ready to start submission");
+  } else {
+    console.log("✗ SOME TESTS FAILED - Please fix issues before running");
+  }
+  console.log("========================================\n");
+
+  // Write detailed results to log
+  if (LOG_FILE && logStream) {
+    logStream.write("\n" + "=".repeat(60) + "\n");
+    logStream.write(`PRE-FLIGHT TEST RESULTS - ${new Date().toISOString()}\n`);
+    logStream.write("=".repeat(60) + "\n");
+    testLog.forEach(line => logStream.write(line + "\n"));
+    logStream.write("=".repeat(60) + "\n\n");
+  }
+
+  return { passed: allPassed, results: testResults };
+}
+
 // --- MAIN -------------------------------------------------------------------
 
 async function connectOverCDPWithRetry(debugWs) {
@@ -944,6 +1127,19 @@ async function connectOverCDPWithRetry(debugWs) {
   const page = await getSoraPage(browser);
   if (!page) throw new Error("No Sora page found; open it in Arc first.");
   const inProgressStrategy = await detectInProgressStrategy(browser, page);
+
+  // Run pre-flight tests
+  const testResult = await runPreflightTests(browser, page, inProgressStrategy);
+  if (!testResult.passed) {
+    console.error("\n⚠️  PRE-FLIGHT TESTS FAILED - Exiting without starting submission loop");
+    console.error("Please fix the failing tests and try again.\n");
+    process.exitCode = 1;
+    try {
+      await browser.close();
+    } catch {}
+    setTimeout(() => process.exit(1), 1000);
+    return;
+  }
 
   console.log("Connected. Maintaining queue…");
 
