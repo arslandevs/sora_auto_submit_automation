@@ -916,9 +916,31 @@ async function submitPrompt(page, prompt) {
 
 // --- MAIN -------------------------------------------------------------------
 
+async function connectOverCDPWithRetry(debugWs) {
+  let attempt = 0;
+  let delayMs = 1000;
+  const maxDelayMs = 15000;
+
+  while (true) {
+    attempt += 1;
+    try {
+      console.log(`Connecting to Arc via CDP (attempt ${attempt}): ${debugWs}`);
+      // Use a long timeout - Arc can be slow with many tabs/extensions
+      const browser = await chromium.connectOverCDP(debugWs, { timeout: 90000 });
+      console.log(`CDP connected: ${debugWs}`);
+      return browser;
+    } catch (err) {
+      const msg = err?.message ? String(err.message) : String(err);
+      console.log(`CDP connect failed (${debugWs}): ${msg}`);
+    }
+    console.log(`Retrying CDP connect in ${Math.round(delayMs / 1000)}s...`);
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+    delayMs = Math.min(maxDelayMs, Math.round(delayMs * 1.4));
+  }
+}
+
 (async () => {
-  console.log("Connecting to Arc via CDP:", DEBUG_WS);
-  const browser = await chromium.connectOverCDP(DEBUG_WS);
+  const browser = await connectOverCDPWithRetry(DEBUG_WS);
   const page = await getSoraPage(browser);
   if (!page) throw new Error("No Sora page found; open it in Arc first.");
   const inProgressStrategy = await detectInProgressStrategy(browser, page);

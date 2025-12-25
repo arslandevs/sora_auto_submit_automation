@@ -1,0 +1,7 @@
+[
+  {
+    "role": "test",
+    "goal": "single submit smoke test",
+    "prompt": "A simple test generation: cute corgi wearing sunglasses, high quality, cinematic lighting"
+  }
+]
